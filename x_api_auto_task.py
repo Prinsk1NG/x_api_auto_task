@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v5.5 (图床变量修复版 + 官方对齐防丢)
+x_api_auto_task.py  v5.8 (Grok策略优化版：双轨搜索防漏报 + 绝对保留原有排版)
 Architecture: RapidAPI(TwtAPI) -> Classification -> Top3 Comments -> Claude/Kimi Synthesis -> AI Cover
 """
 
@@ -194,7 +194,7 @@ def parse_rapidapi_tweets(data) -> list:
     return unique
 
 # ==============================================================================
-# 🚀 抓取引擎：第一级 (宽域扫盘)
+# 🚀 抓取引擎：专家+全网探测双轨制 (完全还原 Grok 的搜索思路)
 # ==============================================================================
 def fetch_all_tweets_batched(accounts: list) -> list:
     if not TWTAPI_KEY: return []
@@ -206,9 +206,10 @@ def fetch_all_tweets_batched(accounts: list) -> list:
     headers = {"x-rapidapi-key": TWTAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
     consecutive_errors = 0  
 
+    # 1. 专家雷达 (保证垂直深度：搜寻 100 位核心大佬)
     for i, chunk in enumerate(chunks, 1):
         if consecutive_errors >= 2: break
-        print(f"\n⏳ [扫盘] 正在抓取第 {i}/{len(chunks)} 批账号...", flush=True)
+        print(f"\n⏳ [专家扫盘] 正在抓取第 {i}/{len(chunks)} 批账号...", flush=True)
         query = " OR ".join([f"from:{acc}" for acc in chunk])
 
         params = {"query": f"({query}) since:{yesterday} -is:retweet", "type": "Latest", "count": "40"}
@@ -234,7 +235,42 @@ def fetch_all_tweets_batched(accounts: list) -> list:
         if success: time.sleep(1.5)
         else: time.sleep(3)
 
-    return all_tweets
+    # 2. 🚨 Grok 启发优化：全网双重探测模式 (打破信息茧房，捕捉突发热点)
+    print(f"\n📡 [全网探测] 启动 Grok 搜索策略，跨出信息茧房...", flush=True)
+    
+    grok_queries = [
+        # 策略 1：广覆盖高互动 (高赞大事件)
+        f'(AI OR "artificial intelligence" OR LLM OR OpenAI OR xAI OR Grok OR Anthropic OR DeepMind OR Claude) since:{yesterday} min_faves:50 -is:retweet',
+        # 策略 2：聚焦新闻与新产品发布 (带链接或媒体)
+        f'(AI OR LLM) (release OR launch OR breakthrough OR update) since:{yesterday} min_faves:30 (filter:links OR filter:media) -is:retweet'
+    ]
+
+    for idx, q in enumerate(grok_queries, 1):
+        print(f"  🔍 执行 Grok 策略 {idx}/2...", flush=True)
+        params_discovery = {"query": q, "type": "Top", "count": "20"}
+        for attempt in range(3):
+            try:
+                resp = requests.get(URL_TWTAPI, headers=headers, params=params_discovery, timeout=25)
+                if resp.status_code == 200:
+                    tweets = parse_rapidapi_tweets(resp.json())
+                    all_tweets.extend(tweets)
+                    print(f"    ✅ 策略 {idx} 成功，捕获 {len(tweets)} 条全网突发情报。")
+                    break
+                elif resp.status_code in [403, 404]: break 
+                else: time.sleep(2)
+            except Exception: time.sleep(2)
+        time.sleep(1.5)
+
+    # 全局去重 (防止专家推文和全网热点重合导致数据冗余)
+    seen_ids = set()
+    final_tweets = []
+    for t in all_tweets:
+        tid = t.get("tweet_id") or t.get("text")
+        if tid not in seen_ids:
+            seen_ids.add(tid)
+            final_tweets.append(t)
+
+    return final_tweets
 
 # ==============================================================================
 # 🚀 抓取引擎：第二级 (定点爆破神评)
@@ -261,7 +297,7 @@ def fetch_top_comments(tweet_id: str) -> list:
     return comments[:5]
 
 # ==============================================================================
-# LLM 提示词
+# LLM 提示词 (排版格式一字未改)
 # ==============================================================================
 def _build_llm_prompt(combined_jsonl: str, today_str: str) -> str:
     return f"""
@@ -271,7 +307,7 @@ You are a top-tier AI industry primary market investment analyst with 10 years o
 Reply entirely in Chinese.
 
 # Task
-Analyze tweets from tech leaders and their interactions/comments (data in JSONL at the end).
+Analyze tweets from tech leaders and global breaking trends (data in JSONL at the end).
 Pay special attention to posts that include a "comments" array—this represents industry consensus or controversy. 
 
 # Output Structure (strictly follow Markdown format)
@@ -545,7 +581,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v5.5 (图床修复版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v5.8 (Grok策略搜索强化版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -613,7 +649,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V5.5 官方对齐版 运行完毕！", flush=True)
+    print("\n🎉 V5.8 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
