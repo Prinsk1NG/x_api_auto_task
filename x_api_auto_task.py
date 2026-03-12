@@ -21,7 +21,7 @@ from openai import OpenAI
 # False = 全量运行（扫 100 人，消耗 13 次 API 额度，推荐！）
 # True  = 测试模式（只扫前 10 人，消耗 4 次 API 额度）
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TEST_MODE = true
+TEST_MODE = True
 
 # ── 环境变量 (严格对齐 Secrets 规范) ──────────────────────────────
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
