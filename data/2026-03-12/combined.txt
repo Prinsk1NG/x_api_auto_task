@@ -1,1 +1,1 @@
-{"a": "elonmusk", "tweet_id": "", "l": 100, "r": 50, "t": "0312", "s": "Fallback mode", "qt": ""}
+{"a": "elonmusk", "tweet_id": "", "l": 100, "r": 0, "t": "0312", "s": "Fallback mode", "qt": ""}
