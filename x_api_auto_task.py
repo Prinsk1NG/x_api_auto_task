@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v5.0 (互动共识版：Search 扫盘 + Comments-V2 爆破)
+x_api_auto_task.py  v5.2 (互动共识神评版 + 强力解析防丢数据 + 一键测试模式)
 Architecture: RapidAPI(TwtAPI) -> Classification -> Top3 Comments -> Claude/Kimi Synthesis -> AI Cover
 """
 
@@ -16,6 +16,13 @@ import requests
 from requests.exceptions import ConnectionError, Timeout
 from openai import OpenAI
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🚨 模式切换开关 🚨
+# False = 全量运行（扫 100 人，消耗 13 次 API 额度，推荐！）
+# True  = 测试模式（只扫前 10 人，消耗 4 次 API 额度）
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST_MODE = true
+
 # ── 环境变量 (严格对齐 Secrets 规范) ──────────────────────────────
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
 SF_API_KEY          = os.getenv("SF_API_KEY", "")
@@ -30,7 +37,7 @@ except:
     KIMI_TEMPERATURE  = 0.3
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 🚨🚨🚨 专属你的 RapidAPI (Twttr API) 接口配置 🚨🚨🚨
+# 🚨 专属你的 RapidAPI (Twttr API) 接口配置 🚨
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RAPIDAPI_HOST = "twitter241.p.rapidapi.com"
 
@@ -38,7 +45,7 @@ RAPIDAPI_HOST = "twitter241.p.rapidapi.com"
 SEARCH_PATH   = "/search" 
 URL_TWTAPI    = "https://" + RAPIDAPI_HOST + SEARCH_PATH
 
-# 评论获取接口 (爆破神评用，来自你提供的 /comments-v2)
+# 评论获取接口 (爆破神评用)
 COMMENTS_PATH = "/comments-v2"
 URL_COMMENTS  = "https://" + RAPIDAPI_HOST + COMMENTS_PATH
 
@@ -75,6 +82,9 @@ ALL_ACCOUNTS = [
     "aibreakdown", "aiexplained", "aipubcast", "lexfridman", "hubermanlab", "swyx",
 ]
 
+if TEST_MODE:
+    ALL_ACCOUNTS = ALL_ACCOUNTS[:10]
+
 def get_feishu_webhooks() -> list:
     urls = []
     for suffix in ["", "_1", "_2", "_3"]:
@@ -108,10 +118,12 @@ def clean_format(text: str) -> str:
     return text
 
 # ==============================================================================
-# 🚀 核心解析引擎 (增加提取 Tweet ID 逻辑)
+# 🚀 核心解析引擎 (V5.2 暴力兼容版)
 # ==============================================================================
 def parse_rapidapi_tweets(data: dict) -> list:
     all_tweets = []
+    
+    # 1. 尝试解析深度 GraphQL 嵌套结构
     try:
         instructions = data.get("result", {}).get("timeline", {}).get("instructions", [])
         for instr in instructions:
@@ -127,11 +139,8 @@ def parse_rapidapi_tweets(data: dict) -> list:
                         user_legacy = tweet_res.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {})
                         
                         if legacy and user_legacy:
-                            # 🚨 提取推文唯一 ID，用于后续抓取评论
-                            tweet_id = tweet_res.get("rest_id") or legacy.get("id_str") or ""
-                            
                             all_tweets.append({
-                                "tweet_id": tweet_id,
+                                "tweet_id": str(tweet_res.get("rest_id") or legacy.get("id_str") or ""),
                                 "screen_name": user_legacy.get("screen_name", ""),
                                 "text": legacy.get("full_text", legacy.get("text", "")),
                                 "favorites": legacy.get("favorite_count", 0),
@@ -142,19 +151,32 @@ def parse_rapidapi_tweets(data: dict) -> list:
                 except Exception: pass
     except Exception: pass
 
+    # 2. 尝试解析普通扁平结构 (兜底兼容 twitter241 变种结构)
     if not all_tweets:
-        flat_list = data.get("timeline") or data.get("tweets") or []
-        for t in flat_list:
-            tweet_id = str(t.get("id_str") or t.get("id") or "")
-            all_tweets.append({
-                "tweet_id": tweet_id,
-                "screen_name": t.get("screen_name") or t.get("author", {}).get("userName") or "",
-                "text": t.get("text") or t.get("full_text") or "",
-                "favorites": t.get("favorites") or t.get("favorite_count") or t.get("likes") or 0,
-                "created_at": t.get("created_at", ""),
-                "reply_to": t.get("reply_to") or t.get("in_reply_to_user_id") or t.get("is_reply"),
-                "quote_text": t.get("quote_text", "")
-            })
+        flat_list = data.get("timeline") or data.get("tweets") or data.get("result") or data.get("data") or []
+        if isinstance(flat_list, dict):
+            flat_list = flat_list.get("timeline", []) or flat_list.get("tweets", [])
+            
+        if isinstance(flat_list, list):
+            for t in flat_list:
+                user_obj = t.get("user") or t.get("author") or t.get("user_info") or {}
+                screen_name = t.get("screen_name") or user_obj.get("screen_name") or user_obj.get("userName") or ""
+                
+                try: likes = int(t.get("favorites") or t.get("favorite_count") or t.get("likes") or 0)
+                except: likes = 0
+                
+                tweet_id = str(t.get("id_str") or t.get("id") or t.get("tweet_id") or "")
+                reply_to = t.get("reply_to") or t.get("in_reply_to_user_id_str") or t.get("in_reply_to_status_id_str") or t.get("is_reply")
+                
+                all_tweets.append({
+                    "tweet_id": tweet_id,
+                    "screen_name": screen_name,
+                    "text": t.get("text") or t.get("full_text") or "",
+                    "favorites": likes,
+                    "created_at": t.get("created_at", ""),
+                    "reply_to": reply_to,
+                    "quote_text": t.get("quote_text", "")
+                })
             
     return all_tweets
 
@@ -175,7 +197,8 @@ def fetch_all_tweets_batched(accounts: list) -> list:
         if consecutive_errors >= 2: break
         print(f"\n⏳ [扫盘] 正在抓取第 {i}/{len(chunks)} 批账号...", flush=True)
         query = " OR ".join([f"from:{acc}" for acc in chunk])
-        params = {"query": f"({query}) since:{yesterday} -is:retweet", "type": "Latest", "count": 20}
+        
+        params = {"query": f"({query}) since:{yesterday} -is:retweet", "type": "Latest", "count": 40}
         
         success = False
         for attempt in range(3):
@@ -184,7 +207,7 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                 if resp.status_code == 200:
                     tweets = parse_rapidapi_tweets(resp.json())
                     all_tweets.extend(tweets)
-                    print(f"  ✅ 第 {i} 批成功，提取 {len(tweets)} 条。")
+                    print(f"  ✅ 第 {i} 批成功，有效提取 {len(tweets)} 条。")
                     consecutive_errors = 0 
                     success = True
                     break
@@ -204,7 +227,6 @@ def fetch_all_tweets_batched(accounts: list) -> list:
 # 🚀 抓取引擎：第二级 (定点爆破神评)
 # ==============================================================================
 def fetch_top_comments(tweet_id: str) -> list:
-    """提取指定推文底下的高赞评论，用于分析共识与分歧"""
     if not tweet_id or not TWTAPI_KEY: return []
     print(f"  🎯 [爆破] 正在深挖神评 (Tweet ID: {tweet_id})...", flush=True)
     
@@ -215,9 +237,7 @@ def fetch_top_comments(tweet_id: str) -> list:
     try:
         resp = requests.get(URL_COMMENTS, headers=headers, params=params, timeout=25)
         if resp.status_code == 200:
-            # 同样使用 parse_rapidapi_tweets 解析返回的数据结构
             raw_comments = parse_rapidapi_tweets(resp.json())
-            # 过滤出字数较多、有意义的评论，排除纯表情回复
             for c in raw_comments:
                 text = c.get("text", "")
                 if len(text) > 10 and not c.get("screen_name") == "":
@@ -225,7 +245,6 @@ def fetch_top_comments(tweet_id: str) -> list:
     except Exception as e:
         print(f"  ⚠️ 神评获取失败: {e}", flush=True)
         
-    # 返回前 5 条最具代表性的神评即可，多了耗费 Token
     return comments[:5]
 
 # ==============================================================================
@@ -449,7 +468,6 @@ def _md_to_html(text):
             html_lines.append(f'<blockquote style="border-left:3px solid #bdc3c7; margin:8px 0; padding-left:10px; color:#7f8c8d; font-size:14px;">{line.replace("> ", "")}</blockquote>')
             continue
             
-        # 🚨 对新加入的 共识与分歧 特别渲染
         if line.startswith('- **🔥') or line.startswith('- **⚔️'):
             converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#d35400;">\1</strong>', line[2:])
             html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6; background:#fff5f5; padding: 6px 10px; border-radius: 4px;">• {converted}</p>')
@@ -488,12 +506,13 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 # ==============================================================================
 def main():
     print("=" * 60, flush=True)
-    print("昨晚硅谷在聊啥 v5.0 (两级火箭：扫盘 + 爆破神评)", flush=True)
+    mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
+    print(f"昨晚硅谷在聊啥 v5.2 (当前模式：{mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
     
-    # 【第一级：海王雷达】批量扫回 100 人的最新推文
+    # 【第一级：海王雷达】批量扫回账号最新推文
     all_raw_tweets = fetch_all_tweets_batched(ALL_ACCOUNTS)
     if not all_raw_tweets:
         print("⚠️ 未能抓取推文，链路测试...", flush=True)
@@ -501,7 +520,7 @@ def main():
         
     bucketed_tweets = {acc.lower(): [] for acc in ALL_ACCOUNTS}
     for t in all_raw_tweets:
-        author = t.get("screen_name") or t.get("author", {}).get("userName") or t.get("user_info", {}).get("screen_name") or ""
+        author = t.get("screen_name", "")
         if author.lower() in bucketed_tweets:
             bucketed_tweets[author.lower()].append(t)
 
@@ -512,19 +531,18 @@ def main():
         tweets = bucketed_tweets[acc.lower()]
         filtered = []
         for t in tweets:
-            likes = t.get("favorites") or t.get("favorite_count") or t.get("likes") or 0
-            is_reply = t.get("reply_to") or t.get("in_reply_to_user_id") or t.get("is_reply")
-            if not is_reply and likes >= 10:
+            likes = t.get("favorites", 0)
+            is_reply = bool(t.get("reply_to"))
+            if not is_reply or likes >= 10:
                 filtered.append(t)
                 
         max_l = max([t.get("favorites", 0) for t in filtered], default=0)
         meta_results[acc] = {"total": len(filtered), "max_l": max_l}
         
-        # 将清洗好的推文拍平，供打分
         for t in filtered:
-            tweet_id = str(t.get("tweet_id") or t.get("id_str") or t.get("id") or "")
+            tweet_id = t.get("tweet_id", "")
             likes = t.get("favorites", 0)
-            text = t.get("text", t.get("full_text", ""))
+            text = t.get("text", "")
             
             all_posts_flat.append({
                 "a": acc, 
@@ -536,7 +554,6 @@ def main():
             })
 
     # 【第二级：高热提纯与定点爆破】
-    # 按点赞数从高到低排序，找出全网最热的前 3 条推文
     all_posts_flat.sort(key=lambda x: x["l"], reverse=True)
     top_3_tweets = [t for t in all_posts_flat if t.get("tweet_id")][:3]
     
@@ -544,9 +561,8 @@ def main():
     for t in top_3_tweets:
         comments = fetch_top_comments(t["tweet_id"])
         if comments:
-            t["hot_comments"] = comments # 塞入专属爆破字段，供大模型品鉴
+            t["hot_comments"] = comments 
 
-    # 截取前 30 条核心推文喂给大模型（含这3条带热评的）
     final_feed = all_posts_flat[:30]
     combined_jsonl = "\n".join(json.dumps(obj, ensure_ascii=False) for obj in final_feed)
     
@@ -579,7 +595,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V5.0 互动共识版 运行完毕！", flush=True)
+    print("\n🎉 V5.2 互动共识版 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
