@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v5.4 (官方文档对齐版：/search-v2 接口 + 递归防丢)
+x_api_auto_task.py  v5.5 (图床变量修复版 + 官方对齐防丢)
 Architecture: RapidAPI(TwtAPI) -> Classification -> Top3 Comments -> Claude/Kimi Synthesis -> AI Cover
 """
 
@@ -29,6 +29,7 @@ SF_API_KEY          = os.getenv("SF_API_KEY", "")
 KIMI_API_KEY        = os.getenv("KIMI_API_KEY", "")
 OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY", "")
 TWTAPI_KEY          = os.getenv("TWTAPI_KEY", "")
+IMGBB_API_KEY       = os.getenv("IMGBB_API_KEY", "") # 🚨 修复：补上了这行至关重要的图床变量声明
 
 OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.7-sonnet")
 try:
@@ -512,7 +513,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v5.4 (官方对齐防丢版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v5.5 (图床修复版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -587,7 +588,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V5.4 官方对齐版 运行完毕！", flush=True)
+    print("\n🎉 V5.5 官方对齐版 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
