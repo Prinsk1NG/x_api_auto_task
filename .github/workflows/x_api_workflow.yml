@@ -32,6 +32,9 @@ jobs:
 
       - name: Run Auto Task
         env:
+          # 🛡️ 屏蔽 GitHub Actions 官方插件关于 Node.js 20 弃用的烦人警告
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+          
           # 🚨 严格对齐你的 GitHub Secrets 命名规则
           FEISHU_WEBHOOK_URL:   ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL_1: ${{ secrets.FEISHU_WEBHOOK_URL_1 }}
@@ -40,11 +43,15 @@ jobs:
           SF_API_KEY:           ${{ secrets.SF_API_KEY }}
           IMGBB_API_KEY:        ${{ secrets.IMGBB_API_KEY }}
           KIMI_API_KEY:         ${{ secrets.KIMI_API_KEY }}
+          QWEN_API_KEY:         ${{ secrets.QWEN_API_KEY }}    # 🚨 新增：千问的 API Key
           OPENROUTER_API_KEY:   ${{ secrets.OPENROUTER_API_KEY }}
           JIJYUN_WEBHOOK_URL:   ${{ secrets.JIJYUN_WEBHOOK_URL }}
           TWTAPI_KEY:           ${{ secrets.TWTAPI_KEY }}
+          
           KIMI_TEMPERATURE:     "1.0"
+          QWEN_MODEL:           "qwen-max"                     # 🚨 新增：明确指定千问模型（如果你想换 plus 或 turbo 可以直接在这改）
           OPENROUTER_MODEL:     "anthropic/claude-3.7-sonnet"
+          
         # 🚨 请确保这里运行的 Python 文件名与你实际的文件名完全一致
         run: python x_api_auto_task.py
 
