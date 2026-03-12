@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.6 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位 + 多主题深度挖掘版)
+x_api_auto_task.py  v6.7 (全面翻译 + 绝对防断裂单行引用 + 多主题深度挖掘 + 算法提纯防霸屏版)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -623,7 +623,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.6 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位 + 多主题挖掘版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.7 (全面翻译 + 算法提纯防霸屏版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -656,11 +656,30 @@ def main():
                 "qt": t.get("quote_text", "")[:200]
             })
 
-    # 【第二级：高热提纯与定点爆破】
+    # 【第二级：高热提纯、去重与定点爆破】
     all_posts_flat.sort(key=lambda x: x["l"], reverse=True)
     
-    # 取最热的前 30 条喂给大模型
-    final_feed = all_posts_flat[:30]
+    final_feed = []
+    account_counts = {}
+    
+    for t in all_posts_flat:
+        # 1. 过滤过短的无意义推文（小于等于20个字符通常是废话或纯表情）
+        if len(t.get("s", "")) <= 20:
+            continue
+            
+        # 2. 限制单一账号霸屏（每个账号最多允许入选 3 条）
+        author = t.get("a", "Unknown")
+        if account_counts.get(author, 0) >= 3:
+            continue
+            
+        final_feed.append(t)
+        account_counts[author] = account_counts.get(author, 0) + 1
+        
+        # 3. 扩大最终喂给大模型的数据池到 40 条，保证信息密度
+        if len(final_feed) >= 40:
+            break
+
+    # 取最热的前 3 条挖掘评论
     top_3_tweets = [t for t in final_feed if t.get("tweet_id")][:3]
     
     print(f"\n[深挖] 锁定今日最具争议的 {len(top_3_tweets)} 大话题，开始抓取评论区...")
@@ -700,7 +719,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.6 运行完毕！", flush=True)
+    print("\n🎉 V6.7 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
