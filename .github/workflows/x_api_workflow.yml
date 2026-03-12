@@ -1,0 +1,59 @@
+name: AI吃瓜日报自动发布(TwtAPI极速版)
+
+on:
+  schedule:
+    - cron: "0 0 * * *"    # 每天北京时间 09:00（UTC+8 → UTC 01:00）/ 根据需要自行调整
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-x-api-tracker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20    # 🚨 耗时极大缩短，从 110 分钟砍到 20 分钟内
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # 🚨 移除了沉重的 playwright 依赖，安装速度提升数倍
+          pip install requests feedparser openai
+
+      - name: Run Auto Task
+        env:
+          # 🚨 严格对齐你的 GitHub Secrets 命名规则
+          FEISHU_WEBHOOK_URL:   ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL_1: ${{ secrets.FEISHU_WEBHOOK_URL_1 }}
+          FEISHU_WEBHOOK_URL_2: ${{ secrets.FEISHU_WEBHOOK_URL_2 }}
+          FEISHU_WEBHOOK_URL_3: ${{ secrets.FEISHU_WEBHOOK_URL_3 }}
+          SF_API_KEY:           ${{ secrets.SF_API_KEY }}
+          IMGBB_API_KEY:        ${{ secrets.IMGBB_API_KEY }}
+          KIMI_API_KEY:         ${{ secrets.KIMI_API_KEY }}
+          OPENROUTER_API_KEY:   ${{ secrets.OPENROUTER_API_KEY }}
+          JIJYUN_WEBHOOK_URL:   ${{ secrets.JIJYUN_WEBHOOK_URL }}
+          TWTAPI_KEY:           ${{ secrets.TWTAPI_KEY }}
+          KIMI_TEMPERATURE:     "1.0"
+          OPENROUTER_MODEL:     "anthropic/claude-3.7-sonnet"
+        # 🚨 请确保这里运行的 Python 文件名与你实际的文件名完全一致
+        run: python x_api_auto_task.py
+
+      - name: Commit daily data
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ || true
+          git commit -m "chore: save daily data $(date -u +%Y-%m-%d) [skip ci]" || echo "No changes to commit"
+          git pull --rebase origin main
+          git push || true
