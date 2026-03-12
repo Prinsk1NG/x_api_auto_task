@@ -292,7 +292,7 @@ Pay special attention to posts that include a "comments" array—this represents
 # Output Structure (strictly follow this Markdown layout)
 
 ⚡️ 今日看板 (The Pulse)
-[一句话总结今日最核心的行业信号。直接写纯文本，绝对禁止在行首使用 > 或 # 符号]
+[100字内总结今日最核心的一个行业信号。直接写纯文本，绝对禁止在行首使用 > 或 # 符号]
 
 ---
 
@@ -301,18 +301,14 @@ Pay special attention to posts that include a "comments" array—this represents
 
 ---
 
-🔁 主题标题：副标题
+🔁 主题标题
 
 💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
 
 🗣️ @账号名 | Title
-> 「推文原文或译文」(❤️ [赞数]赞 | 💬 [评论数]评)
-> 原文发布于 [发布日期] CST
-
-📝 捕手深度解码：
+"「推文译文」"
 **🔥 核心共识**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 **⚔️ 最大分歧**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
-**📌 增量事实**：[直接输出事实文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 
 ---
 
@@ -330,8 +326,7 @@ Pay special attention to posts that include a "comments" array—this represents
 
 📣 今日精选推文 (Top 5 Picks)
 🗣️ @账号名 | Title
-> 「推文译文」(❤️ [赞数]赞 | 💬 [评论数]评)
-> 原文发布于 [发布日期] CST
+> 「推文译文」❤️[赞数]|💬[评论数]
 
 # Strict Constraints (MUST OBEY)
 1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名！
