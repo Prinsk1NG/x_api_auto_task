@@ -1,5 +1,5 @@
 ⚡️ 今日看板 (The Pulse)
-Musk宣布Grok Imagine将采用R级电影内容标准，同时推出Grok 4.20版本API，支持多智能体、推理和非推理三大变体，拥有200万token超大上下文窗口，AI Agent生态正加速落地。
+Grok突破百万评论里程碑，Musk暗示将在代码能力上超越竞争对手；同时Atlassian宣布裁员10%以重组AI战略，Andrew Yang提议对AI征税以资助UBI。
 
 ---
 
@@ -7,133 +7,126 @@ Musk宣布Grok Imagine将采用R级电影内容标准，同时推出Grok 4.20版
 
 ---
 
-🔁 Grok进化：R级内容与多智能体变体
+🔁 Grok崛起：从用户评论到代码能力突破
 
-💡 叙事转向：Grok通过内容开放性和多智能体能力双管齐下，直指OpenAI和Anthropic的市场份额。
+💡 叙事转向：Grok通过百万用户评论展示市场认可，Musk亲自主导代码能力提升战略，意图超越OpenAI和Anthropic。
 
 🗣️ @elonmusk | CEO of Tesla/SpaceX/X
-> 「If it's allowed in an R-rated movie, it's allowed in @Grok Imagine」(❤️ 45779赞 | 💬 4656评)
-> 原文发布于 0312 CST
+> Cool (❤️ 8699赞 | 💬 1356评)
+> 原文发布于 03-12 CST
 
-🗣️ @XFreeze | AI Researcher
-> 「xAI just released Grok 4.20 - 3 new API variants are now live:
+🗣️ @Politomato | Political Commentator
+> @elonmusk Grok hitting 1M reviews means folks are sick of censored chatbots and want straight talk. Freedom wins again. Nice work @elonmusk (❤️ N/A赞 | 💬 N/A评)
+> 原文发布于 03-12 CST
 
-→ Grok 4.20 Beta – Multi-Agent
-→ Grok 4.20 Beta – Reasoning
-→ Grok 4.20 Beta – Non-Reasoning
-
-2,000,000 token massive context window across all three variants - one of the largest in the industry right now」(❤️ 501赞 | 💬 100评)
-> 原文发布于 0312 CST
+🗣️ @cb_doge | Tech Reporter
+> ELON MUSK: "Grok is currently behind in coding. The reason I was late for this was that I was just in a giant sort of all hands on coding, going through all the things that need to happen to essentially exceed our competitors on coding, which I think we'll do. I feel we should (❤️ 3908赞 | 💬 224评)
+> 原文发布于 03-12 CST
 
 📝 捕手深度解码：
-🔥 核心共识：Grok通过更开放的内容政策和技术创新双线进击，正式宣告与OpenAI和Anthropic的三足鼎立格局。2M token上下文窗口是当前行业最大规模之一，为长文档处理和复杂推理提供基础。
-⚔️ 最大分歧：R级内容政策是否会带来监管风险，以及Grok的多智能体架构能否在实际应用中超越GPT和Claude的单智能体模式。
-📌 增量事实：Grok 4.20版本不仅带来了多智能体能力，还专门提供了推理和非推理两种变体，显示xAI正在针对不同应用场景优化模型性能。
+🔥 核心共识：Grok在短时间内达到百万评论是市场对"无审查"AI的强烈需求信号，用户明显偏好不受政治正确限制的AI体验。
+⚔️ 最大分歧：Grok在代码能力方面能否真正超越OpenAI和Anthropic仍存疑，特别是在其他模型如Nemotron 3 Super等新模型迅速迭代的背景下。
+📌 增量事实：Musk亲自参与Grok代码能力提升的战略会议，表明xAI正在将代码能力作为下一个重点战场，这与Claude和ChatGPT的竞争策略一致。
 
 ---
 
-🔁 AI Agent：从概念走向实用化拐点
+🔁 AI结构性失业开始显现：企业裁员与UBI讨论
 
-💡 叙事转向：智能体（Agent）正从研究概念迅速转向商业应用，成为2026年AI产业最核心的技术赛道。
+💡 叙事转向：AI驱动的企业重组已从理论进入实践阶段，裁员10%成为标准模式，同时UBI作为解决方案进入主流讨论。
 
-🗣️ @RhysSullivan | AI Engineer
-> 「MCP sucking is a harness problem, not an MCP problem
+🗣️ @Polymarket | Market Intelligence Platform
+> BREAKING: Enterprise software firm Atlassian announces its laying off 10% of its workforce to restructure around AI. (❤️ 3400赞 | 💬 201评)
+> 原文发布于 03-12 CST
 
-MCP unlocks behavior that is fundamentally impossible to get via CLI or APIs
+🗣️ @Polymarket | Market Intelligence Platform
+> BREAKING: Andrew Yang suggests the US should stop taxing humans — should tax AI instead to fund UBI. (❤️ 2119赞 | 💬 218评)
+> 原文发布于 03-12 CST
 
-Bad auth, too much context usage, all get solved with an execution layer - your agent writes code to progressively discover and call tools」(❤️ 705赞 | 💬 70评)
-> 原文发布于 0312 CST
-
-🗣️ @okx | Crypto Exchange
-> All eyes on AI agents. The future is now. (❤️ 458赞 | 💬 213评)
-> 原文发布于 0312 CST
-
-🗣️ @AITECHio | AI Development Platform
-> 「Automate Your Content Workflow!
-
-Content creation takes more than just writing.
-
-Research, structuring ideas, drafting, and optimizing for search can take hours before a piece is even ready to publish.
-
-With Agent Forge, AI agents can automate large parts of that workflow.」(❤️ 276赞 | 💬 10评)
-> 原文发布于 0312 CST
+🗣️ @r0ck3t23 | Tech Analyst
+> NVIDIA CEO Jensen Huang just said the quiet part out loud about what the education system will never admit.
+> 
+> For a century, we built humans to think like calculators.
+> 
+> The algorithm made that skillset obsolete overnight.
+> 
+> Huang: "The definition of smart is somebody who's (❤️ 2414赞 | 💬 130评)
+> 原文发布于 03-12 CST
 
 📝 捕手深度解码：
-🔥 核心共识：AI Agent已从概念验证阶段进入实用落地阶段，尤其在内容创作、数据分析等领域展现出显著的自动化价值。MCP（Model-Code-Policy）架构正成为构建有效Agent的主流方法。
-⚔️ 最大分歧：Agent的执行层（execution layer）应如何设计才能平衡安全性与灵活性，以及多Agent协作系统是否能真正超越单一大模型的能力范围。
-📌 增量事实：金融和加密货币领域正积极拥抱AI Agent技术，@Miss___Rose_提到"AI agents may soon transact more than humans"，暗示智能体交易量可能很快超过人类交易量。
+🔥 核心共识：企业以AI重组为由进行10%规模裁员已成为标准操作，这表明AI替代人力的进程已从理论转为实践。
+⚔️ 最大分歧：Andrew Yang提出的AI税+UBI方案能否实际解决AI带来的结构性失业问题，以及该方案的财政可行性。
+📌 增量事实：Atlassian作为主流企业软件公司宣布裁员10%重组AI战略，这是继Meta、Microsoft等科技巨头后又一个以AI为由进行大规模裁员的案例。
 
 ---
 
-🔁 硅谷新联盟：NVIDIA与AI初创公司深度绑定
+🔁 Agent架构之争：MCP vs 工具调用
 
-💡 叙事转向：NVIDIA正通过战略投资和工程合作，构建围绕自身硬件的AI全栈生态系统。
+💡 叙事转向：多智能体架构逐渐成熟，关于执行层设计的争论从理论转向实践，MCP和工具调用各有支持者。
 
-🗣️ @nvidianewsroom | NVIDIA News
-> 「NVIDIA and @nebiusai announced a strategic partnership to scale a full-stack AI cloud.
- Together, we're bringing deep engineering collaboration to AI factories for inference and agentic AI. 
+🗣️ @RhysSullivan | AI Researcher
+> MCP sucking is a harness problem, not an MCP problem
+> 
+> MCP unlocks behavior that is fundamentally impossible to get via CLI or APIs
+> 
+> Bad auth, too much context usage, all get solved with an execution layer - your agent writes code to progressively discover and call tools (❤️ 807赞 | 💬 82评)
+> 原文发布于 03-12 CST
 
-Read the release:」(❤️ 129赞 | 💬 8评)
-> 原文发布于 0311 CST
+🗣️ @AITECHio | AI Solutions Provider
+> Automate Your Content Workflow!
+> 
+> Content creation takes more than just writing.
+> 
+> Research, structuring ideas, drafting, and optimizing for search can take hours before a piece is even ready to publish.
+> 
+> With Agent Forge, AI agents can automate large parts of that workflow. (❤️ 339赞 | 💬 12评)
+> 原文发布于 03-12 CST
 
-🗣️ @ArtificialAnlys | AI Research Group
-> 「NVIDIA has released Nemotron 3 Super, a 120B (12B active) open weights reasoning model that scores 36 on the Artificial Analysis Intelligence Index with a hybrid Mamba-Transformer MoE architecture
-
-We were given access to this model ahead of launch and evaluated it across」(❤️ 428赞 | 💬 14评)
-> 原文发布于 0311 CST
+🗣️ @ycombinator | Startup Accelerator
+> Lucent (@lucent_ai) is an AI that automatically watches your session replays and finds bugs and UX issues. 
+> 
+> They're already used by top product teams including Reducto, Julius, Finta, and Happenstance. 
+> 
+> Congrats on the launch, @RaeAlisa_! (❤️ 505赞 | 💬 73评)
+> 原文发布于 03-11 CST
 
 📝 捕手深度解码：
-🔥 核心共识：NVIDIA正从纯硬件供应商转型为AI全栈解决方案提供商，通过开源模型和战略合作扩大生态影响力。Nemotron 3 Super采用的混合Mamba-Transformer MoE架构代表了当前模型架构的前沿探索。
-⚔️ 最大分歧：NVIDIA是否会通过这些合作和开源模型挤压初创公司的生存空间，以及其全栈战略是否会引发反垄断审查。
-📌 增量事实：Nemotron 3 Super虽然总参数量达到120B，但实际激活参数仅为12B，这种专家混合（MoE）架构显著提高了计算效率，使模型在保持性能的同时大幅降低推理成本。
+🔥 核心共识：多智能体架构正从概念验证阶段进入实用化阶段，专注于特定领域的Agent产品开始出现并获得市场认可。
+⚔️ 最大分歧：MCP (Model Code Proxy)与传统工具调用方式的效率与安全性争论，前者提供更灵活的能力但存在安全隐患，后者更可控但限制了Agent的探索能力。
+📌 增量事实：Y Combinator开始孵化专注于特定领域的Agent产品如Lucent，表明VC开始看好垂直领域的Agent应用，而非通用Agent平台。
 
 ---
 
 💰 资本与估值雷达 (Investment Radar)
-1. **投融资快讯：** Anthropic宣布成立"The Anthropic Institute"研究机构，专注解决AI带来的社会挑战，估计投入超过1亿美元。Nebius AI获得NVIDIA战略投资，双方将在AI云基础设施和智能体技术上展开深度合作。
-2. **VC 偏好：** 顶级VC正将投资重点从通用大模型转向AI Agent应用层，特别是内容创作自动化、金融交易和企业流程自动化领域。Moondream等图像分割技术也获得资本青睐，表明多模态AI应用正成为新热点。
+1. **投融资快讯：** Lucent AI获得Y Combinator投资，专注于自动化UI/UX测试领域；Agent Forge在内容工作流自动化领域获得市场关注，预计将在下一轮融资中获得显著估值提升。
+2. **VC 偏好：** a16z对开源项目OpenClaw的关注表明VC开始重新审视开源AI项目的投资价值；垂直领域的Agent应用成为新的投资热点，特别是能够自动化特定工作流的解决方案。
 
 ---
 
 📊 风险与中国视角 (Risk & China View)
-1. **中国 AI 评价：** 中国大模型在图像分割领域取得进展，但在多智能体协作系统方面与美国存在差距。国内厂商正加速布局Agent框架，预计在2026年下半年将有突破性产品面世。
-2. **地缘与监管：** R级内容标准的引入可能引发全球AI内容监管差异化，中国市场需采用更保守的内容策略。美国参议院对AI监管的"懒惰"态度（引用Musk的话）可能导致监管真空，为中国AI企业提供国际扩张窗口期。
+1. **中国 AI 评价：** 国际投资者对中国春节消费数据表现出关注，但对中国大模型技术评价缺乏实质性讨论，表明中国AI模型在国际技术讨论中的存在感仍然不足。
+2. **地缘与监管：** Grok的"无审查"策略在获得用户欢迎的同时，可能面临更严格的内容监管挑战；AI税的讨论开始进入主流，预示着各国可能采取不同的AI税收政策，进一步加剧国际AI竞争的复杂性。
 
 ---
 
 📣 今日精选推文 (Top 5 Picks)
 🗣️ @elonmusk | CEO of Tesla/SpaceX/X
-> 「If it's allowed in an R-rated movie, it's allowed in @Grok Imagine」(❤️ 45779赞 | 💬  4656评)
-> 原文发布于 0312 CST
+> Update @Grok Imagine (❤️ 6656赞 | 💬 1683评)
+> 原文发布于 03-12 CST
 
-🗣️ @XFreeze | AI Researcher
-> 「xAI just released Grok 4.20 - 3 new API variants are now live:
+🗣️ @cb_doge | Tech Reporter
+> ELON MUSK: "My back still hurts a little bit. I'm like, Can AI please solve back pain? That would be a huge one. And I think it will. Back pain sucks. I think that's maybe why do people get grumpy when they get oldest? Because of back pain." (❤️ 4562赞 | 💬 594评)
+> 原文发布于 03-12 CST
 
-→ Grok 4.20 Beta – Multi-Agent
-→ Grok 4.20 Beta – Reasoning
-→ Grok 4.20 Beta – Non-Reasoning
+🗣️ @Polymarket | Market Intelligence Platform
+> BREAKING: Enterprise software firm Atlassian announces its laying off 10% of its workforce to restructure around AI. (❤️ 3400赞 | 💬 201评)
+> 原文发布于 03-12 CST
 
-2,000,000 token massive context window across all three variants - one of the largest in the industry right now」(❤️ 501赞 | 💬 100评)
-> 原文发布于 0312 CST
-
-🗣️ @cb_doge | Tech Analyst
-> 「ELON MUSK: "Grok's logo is the singularity. It's called the singularity for a reason. You know that it's hard to predict what happens in that in the singularity. But it's going to be very interesting. We're going to live in the future which will be very entertaining."」(❤️ 619赞 | 💬  91评)
-> 原文发布于 0312 CST
-
-🗣️ @Miss___Rose_ | Crypto Analyst
-> 「GM GM ☕️☀️
-
-Coffee and a Web3 Brief 🌹
-
-• $700B wiped out from U.S. stocks
-• Oil prices dropped on easing Iran tensions
-• Crypto market added ~$60B in a day
-• AI agents may soon transact more than humans
-• Over 20M Bitcoin have now been mined
-
-Catch you on the next one」(❤️ 173赞 | 💬 150评)
-> 原文发布于 0312 CST
+🗣️ @GoogleDeepMind | AI Research Lab
+> We're excited to unveil the name of our new London building: Platform 37. 📍
+> 
+> The name honors both the surrounding area's transport heritage and "Move 37" – the critical moment where our AI system AlphaGo showed it could find novel solutions humans hadn't considered. (❤️ 590赞 | 💬 28评)
+> 原文发布于 03-12 CST
 
 🗣️ @Cointelegraph | Crypto News
-> 「🚨 UPDATE: Anthropic launches The Anthropic Institute to address major societal challenges posed by powerful AI.」(❤️ 283赞 | 💬 57评)
-> 原文发布于 0311 CST
+> 🚨 UPDATE: Anthropic launches The Anthropic Institute to address major societal challenges posed by powerful AI. (❤️ 317赞 | 💬 58评)
+> 原文发布于 03-11 CST
