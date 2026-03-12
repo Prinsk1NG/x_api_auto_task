@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.4 (千问Qwen替换版 + 原声竖线完美还原 + 加粗共识)
+x_api_auto_task.py  v6.5 (全面翻译 + 绝对防断裂单行引用 + 强力清洗臆造词版)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -21,7 +21,7 @@ from openai import OpenAI
 # False = 全量运行（扫 100 人 + 2次全球热点搜索，推荐！）
 # True  = 测试模式（只扫前 10 人 + 2次全球热点搜索，省配额）
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TEST_MODE = False
+TEST_MODE = True
 
 # ── 环境变量 (严格对齐 Secrets 规范) ──────────────────────────────
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
@@ -311,7 +311,7 @@ Pay special attention to posts that include a "comments" array—this represents
 💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
 
 🗣️ @账号名 | Title
-"「推文译文」"
+> 「[此处输出推文内容的纯中文高质量翻译。严禁照搬原英文，必须全部翻译！如果是多句内容，请用空格代替原文的换行符，必须合成一整段单行输出，绝对禁止换行导致引用块断裂]」 (❤️ [赞数] | 💬 [评论数])
 **🔥 核心共识**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 **⚔️ 最大分歧**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 
@@ -331,15 +331,14 @@ Pay special attention to posts that include a "comments" array—this represents
 
 📣 今日精选推文 (Top 5 Picks)
 🗣️ @账号名 | Title
-> 「推文中译文，严禁不翻译，一整句话输出，严禁换行」❤️[赞数]|💬[评论数]
+> 「[此处输出推文内容的纯中文高质量翻译。必须全面翻译！如果是多句内容，请用空格代替原文的换行符，合成一整段单行输出，绝对禁止换行]」 (❤️ [赞数] | 💬 [评论数])
 
 # Strict Constraints (MUST OBEY)
 1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名！
 2. **Title与名字禁止翻译：** Title（头衔/身份）和名字绝对不要翻译为中文，保持纯英文！
-3. **短句禁止翻译：** 如果原始推文少于 10 个单词，绝对不要翻译！直接在 `> ` 引用块中显示原汁原味的纯英文原文！如果大于 10 个单词则翻译为中文。
-4. **强行保证原声态竖线：** 每一段原推文的引用以及日期行，必须且只能使用 `> ` 开头！
-5. **禁止私造标题/乱码：** - 严禁自己编造 `# 硅谷AI日报` 之类的大标题，直接从 `⚡️ 今日看板 (The Pulse)` 开头输出。
-   - 在【核心共识】和【最大分歧】前面，只保留双星号加粗，绝对不要添加 `#`、`>`、`-`、`* ` 等列表符号！
+3. **必须全面高质量翻译：** 对于引用区域的推文内容，**必须全部翻译为流畅自然的中文**（除极少量的不可译专有名词外）。严禁直接大段照搬英文原文，严禁以“句子太短”为借口不翻译！
+4. **引用块绝对单行（严禁换行）：** 每一条推文的引用内容（放入 `> ` 后面的文字），必须在同一行内输出完成！将原推文中的所有回车/换行符全部替换为**空格**或**逗号**。绝对禁止在推文翻译中擅自换行导致 `> ` 竖线断裂脱节！
+5. **禁止臆造冗余字段（最高优先级）：** 绝对不要输出诸如“📝 捕手深度解码”、“📌 增量事实”、“原文发布于 xxx CST”等未经本模板要求的内容。严格按照上述 Markdown 结构进行输出！
 
 # Input Data (JSONL)
 {combined_jsonl}
@@ -438,9 +437,12 @@ def upload_to_imgbb_via_url(sf_url):
     return sf_url
 
 # ==============================================================================
-# 视觉对位引擎 (完美还原原生竖线、精准高亮共识分歧)
+# 视觉对位引擎 (完美还原原生竖线、精准高亮共识分歧、并强力清除臆造字段)
 # ==============================================================================
 def _preprocess_md(content_md: str) -> str:
+    # 🧹 强力清洗：物理清除大模型可能产生的臆造字段 (双重保险)
+    content_md = re.sub(r'^.*(📝 捕手深度解码|📌 增量事实|原文发布于).*$\n?', '', content_md, flags=re.MULTILINE)
+
     # 强力抹除大模型可能私自加上的 H1 大标题，防飞书报错
     content_md = re.sub(r'^#\s*.*?(今日看板|The Pulse).*?\n', '⚡️ 今日看板 (The Pulse)\n', content_md, flags=re.MULTILINE|re.IGNORECASE)
     
@@ -514,6 +516,10 @@ def _md_to_html(text):
     for i, line in enumerate(lines):
         line = line.strip()
         if not line: continue
+
+        # 🧹 微信端防御：过滤掉漏网的臆造词段落
+        if re.search(r'(📝 捕手深度解码|📌 增量事实|原文发布于)', line):
+            continue
 
         # 🚨 完美引用体渲染：左侧灰色竖线 + 灰白底块 (视觉100%对位)
         if line.startswith('>'):
@@ -607,7 +613,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.4 (千问Qwen首发 + 竖线视觉对位版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.5 (全面翻译 + 绝对防断裂单行引用版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -675,14 +681,16 @@ def main():
         cover_url = upload_to_imgbb_via_url(sf_url) if sf_url else ""
 
     if report_text:
+        # 发送飞书前经过 _preprocess_md 拦截
         send_to_feishu_card(report_text, today_str, model_label=model_label)
         if JIJYUN_WEBHOOK_URL:
+            # 构建微信HTML时，_md_to_html 会进行双重防御拦截
             html_content = build_wechat_html(report_text, cover_url=cover_url, insight=cover_insight)
             wechat_title = cover_title or f"AI吃瓜日报 | {today_str}"
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.4 运行完毕！", flush=True)
+    print("\n🎉 V6.5 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
