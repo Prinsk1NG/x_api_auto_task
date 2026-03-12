@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.2 (原声竖线对位 + 强力清洗乱码与蓝点 + 双语翻译铁律)
+x_api_auto_task.py  v6.3 (Grok双擎扫描 + 彻底消除@unknown + 原声竖线视觉对位)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -291,41 +291,52 @@ Pay special attention to posts that include a "comments" array—this represents
 
 # Output Structure (strictly follow this Markdown layout)
 
-## ⚡️ 今日看板 (The Pulse)
-一句话总结今日最核心的 1-2 个行业定调信号。（绝对禁止以 > 开头，直接写正文）
+⚡️ 今日看板 (The Pulse)
+[一句话总结今日最核心的行业信号。直接写纯文本，绝对禁止在行首使用 > 或 # 符号]
 
 ---
 
-## 🧠 深度叙事追踪 (Thematic Narratives)
-将推文按主题聚合。每个主题严格如下（3-5个主题）：
+🧠 深度叙事追踪 (Thematic Narratives)
+[直接开始输出主题，禁止多余的话]
 
 ---
 
-### 🔁 主题标题：副标题
+🔁 主题标题：副标题
 
-💡 叙事转向：[一句话核心判断，什么在变化]（绝对禁止以 > 开头，直接写正文）
+💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
 
 🗣️ @账号名 | Title
-"「中文译文或英文原文」"❤️ [赞数]赞 | 💬 [评论数]评
-🔥 核心共识：评论区或行业普遍认同的观点
-⚔️ 最大分歧：激烈的反驳意见或截然不同的视角
+> 「推文原文或译文」(❤️ [赞数]赞 | 💬 [评论数]评)
+> 原文发布于 [发布日期] CST
+
+📝 捕手深度解码：
+🔥 核心共识：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号]
+⚔️ 最大分歧：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号]
+📌 增量事实：[直接输出事实文本，绝对禁止在开头添加 - 或 * 符号]
 
 ---
 
-## 💰 资本与估值雷达 (Investment Radar)
+💰 资本与估值雷达 (Investment Radar)
 1. **投融资快讯：** 具体的融资额与领投机构。
-2. **VC观点：** 顶级机构投资风向警示。
+2. **VC 偏好：** 顶级机构投资风向警示。
 
 ---
 
-## 📣 今日精选推文 (Top 5 Picks)
+📊 风险与中国视角 (Risk & China View)
+1. **中国 AI 评价：** 对中国大模型的技术评价。
+2. **地缘与监管：** 出口、合规、版权风险。
+
+---
+
+📣 今日精选推文 (Top 5 Picks)
 🗣️ @账号名 | Title
-> 「中文译文或英文原文」(❤️ [赞数]赞 | 💬 [评论数]评)
+> 「推文原文或译文」(❤️ [赞数]赞 | 💬 [评论数]评)
+> 原文发布于 [发布日期] CST
 
 # Strict Constraints (MUST OBEY)
-1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名。
+1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名！
 2. **Title与名字禁止翻译：** Title（头衔/身份）和名字绝对不要翻译为中文，保持纯英文！
-3. **短句禁止翻译：** 如果原始推文少于 10 个单词，绝对不要翻译，直接在 `> ` 引用块中显示原汁原味的英文！
+3. **短句禁止翻译：** 如果原始推文少于 10 个单词，绝对不要翻译！直接在 `> ` 引用块中显示原汁原味的英文！
 4. **禁止私造标题/乱码：** - 严禁自己编造 `# 硅谷AI日报` 之类的大标题，直接从 `⚡️ 今日看板 (The Pulse)` 开头输出。
    - 所有带有 Emoji 的标题和正文行首，绝对不要添加 `#`、`>`、`-`、`*` 等乱七八糟的符号！
 
@@ -411,13 +422,23 @@ def upload_to_imgbb_via_url(sf_url):
 # 视觉对位引擎 (完美清除蓝点，直接发送干净原生 Markdown)
 # ==============================================================================
 def _preprocess_md(content_md: str) -> str:
-    # 兜底：强力抹除大模型可能私自加上的 H1 大标题
-    content_md = re.sub(r'^#\s*.*?(日报|The Pulse).*?\n', '', content_md, flags=re.MULTILINE|re.IGNORECASE)
+    # 强力抹除大模型可能私自加上的 H1 大标题，防飞书报错
+    content_md = re.sub(r'^#\s*.*?(今日看板|The Pulse).*?\n', '⚡️ 今日看板 (The Pulse)\n', content_md, flags=re.MULTILINE|re.IGNORECASE)
+    
+    # 强力清洗：消除可能导致蓝点的无效字符 (- 或 *)
+    content_md = re.sub(r'^[-*]\s*([🔥⚔️📌])', r'\1', content_md, flags=re.MULTILINE)
+    
+    # 强力清洗：消除不应该出现在标题前的 > 符号
+    content_md = re.sub(r'^>\s*(⚡️|💡)', r'\1', content_md, flags=re.MULTILINE)
     
     # 飞书特供：为核心 Emoji 标题加上加粗和模块装饰
     content_md = re.sub(r'^(⚡️|🧠|💰|📊|📣)(.+)$', r'\n**▌ \1\2**', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'^(🔁)(.+)$', r'**\1\2**', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'^\s*---\s*$', '\n<HR>\n', content_md, flags=re.MULTILINE)
+    
+    # 确保引用块 `>` 之前有空行，保证 Markdown 解析引擎能正确渲染灰色竖线！
+    content_md = re.sub(r'([^\n])\n>', r'\1\n\n>', content_md)
+    
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
     return content_md.strip()
 
@@ -441,7 +462,7 @@ def _split_to_elements(content_md: str) -> list:
                 elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = para
             else: chunk = chunk + "\n\n" + para if chunk else para
             
-    # 让飞书原生的 markdown 解析器去处理 "> "，渲染出纯正的灰色竖线框
+    # 让飞书原生的 markdown 解析器去处理 "> "，渲染出最纯正美观的灰色竖线框
     if chunk.strip(): elements.append({"tag": "markdown", "content": chunk.strip()})
     return elements
 
@@ -532,7 +553,7 @@ def _md_to_html(text):
 
 def build_wechat_html(text, cover_url="", insight=""):
     cover_block = f'<p style="text-align:center;margin:0 0 16px 0;"><img src="{cover_url}" style="max-width:100%;border-radius:8px;" /></p>' if cover_url else ""
-    # 🚨 更改 Insight 标题内容
+    # 🚨 精准更改 Insight 标题
     insight_block = f'<div style="border-radius:8px;background:#FFF7E6;padding:12px 14px;margin:0 0 16px 0;"><div style="font-weight:bold;margin-bottom:6px;">Insight | 昨晚硅谷在聊啥？</div><div>{insight.replace(chr(10), "<br/>")}</div></div>' if insight else ""
     text = clean_format(text)
     return cover_block + insight_block + _md_to_html(text)
@@ -542,7 +563,8 @@ def push_to_jijyun(html_content, title, cover_url=""):
     try: requests.post(JIJYUN_WEBHOOK_URL, json={"title": title, "author": "Prinski", "html_content": html_content, "cover_jpg": cover_url}, timeout=30)
     except Exception: pass
 
-def save_daily_data(today_str: post_objects: list, report_text: str):
+# 🚨 修复参数类型导致语法错误的 Bug
+def save_daily_data(today_str: str, post_objects: list, report_text: str):
     data_dir = Path(f"data/{today_str}")
     data_dir.mkdir(parents=True, exist_ok=True)
     combined_txt = "\n".join(json.dumps(obj, ensure_ascii=False) for obj in post_objects)
@@ -555,7 +577,7 @@ def save_daily_data(today_str: post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.2 (原声竖线对位 + 终结Unknown - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.3 (双擎防漏 + 纯正竖线对位版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -629,7 +651,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.2 运行完毕！", flush=True)
+    print("\n🎉 V6.3 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
