@@ -331,7 +331,7 @@ Pay special attention to posts that include a "comments" array—this represents
 
 📣 今日精选推文 (Top 5 Picks)
 🗣️ @账号名 | Title
-> 「推文译文」❤️[赞数]|💬[评论数]
+> 「推文中译文，严禁不翻译，一整句话输出，严禁换行」❤️[赞数]|💬[评论数]
 
 # Strict Constraints (MUST OBEY)
 1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名！
