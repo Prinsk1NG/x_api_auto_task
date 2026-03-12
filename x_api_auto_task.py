@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.0 (双擎搜索防漏 + @unknown终结 + 视觉原声对位)
-Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> UI Rendering
+x_api_auto_task.py  v6.2 (原声竖线对位 + 强力清洗乱码与蓝点 + 双语翻译铁律)
+Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
 import os
@@ -145,6 +145,16 @@ def parse_rapidapi_tweets(data) -> list:
                     u = obj.get("user") or obj.get("author") or obj.get("user_info") or {}
                     sn = u.get("screen_name") or u.get("userName") or u.get("username")
                 if not sn and obj.get("legacy"): sn = obj["legacy"].get("screen_name")
+                
+                # 🚨 终极防守：正则表达式强制剥离 JSON 中的真实账号
+                if not sn:
+                    raw_str = json.dumps(obj)
+                    sn_match = re.search(r'"screen_name"\s*:\s*"([^"]+)"', raw_str)
+                    if sn_match:
+                        sn = sn_match.group(1)
+                    else:
+                        usr_match = re.search(r'"userName"\s*:\s*"([^"]+)"', raw_str)
+                        if usr_match: sn = usr_match.group(1)
 
                 if sn:
                     t_id = obj.get("rest_id") or obj.get("id_str") or obj.get("id") or obj.get("tweet_id")
@@ -268,19 +278,18 @@ def fetch_top_comments(tweet_id: str) -> list:
     return []
 
 # ==============================================================================
-# LLM 提示词 (严格修正排版、防乱码、翻译约束)
+# LLM 提示词 (严格铁律防乱码 + 禁止不当翻译 + 统一原声展现)
 # ==============================================================================
 def _build_llm_prompt(combined_jsonl: str, today_str: str) -> str:
     return f"""
 # Role
 You are a top-tier AI industry primary market investment analyst with 10 years of experience. You write a "daily briefing" for senior partners.
-Reply entirely in Chinese, EXCEPT for English names, titles, and short original texts.
 
 # Task
 Analyze tweets from tech leaders and global breaking trends (data in JSONL at the end).
 Pay special attention to posts that include a "comments" array—this represents industry consensus or controversy. 
 
-# Output Structure (strictly follow Markdown format)
+# Output Structure (strictly follow this Markdown layout)
 
 ## ⚡️ 今日看板 (The Pulse)
 一句话总结今日最核心的 1-2 个行业定调信号。（绝对禁止以 > 开头，直接写正文）
@@ -313,12 +322,12 @@ Pay special attention to posts that include a "comments" array—this represents
 🗣️ @账号名 | Title
 > 「中文译文或英文原文」(❤️ [赞数]赞 | 💬 [评论数]评)
 
-# Constraints (Must Obey)
-1. **账号展示格式：** 统一使用 `🗣️ @账号名|Title` 的格式。
-2. **英文不翻译：** 名字和 Title 绝对不要翻译，保留纯英文！例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`。
-3. **短句不翻译：** 如果推文原文少于 10 个单词，绝对不要翻译！直接在引用块 `` 中保留原滋原味的英文。
-4. **禁止无用乱码：** 在「核心共识」和「最大分歧」前面，不要使用 `-` 或 `*` 列表符，直接以 🔥 和 ⚔️ 作为段落开头，防止出现排版乱码和蓝色圆点。
-5. **排版纪律：** 每个子话题 (###) 之前必须有一条 `---` 分割线。
+# Strict Constraints (MUST OBEY)
+1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名。
+2. **Title与名字禁止翻译：** Title（头衔/身份）和名字绝对不要翻译为中文，保持纯英文！
+3. **短句禁止翻译：** 如果原始推文少于 10 个单词，绝对不要翻译，直接在 `> ` 引用块中显示原汁原味的英文！
+4. **禁止私造标题/乱码：** - 严禁自己编造 `# 硅谷AI日报` 之类的大标题，直接从 `⚡️ 今日看板 (The Pulse)` 开头输出。
+   - 所有带有 Emoji 的标题和正文行首，绝对不要添加 `#`、`>`、`-`、`*` 等乱七八糟的符号！
 
 # Input Data (JSONL)
 {combined_jsonl}
@@ -399,11 +408,15 @@ def upload_to_imgbb_via_url(sf_url):
     return sf_url
 
 # ==============================================================================
-# 视觉对位引擎 (严格还原引用竖线 + 剔除乱码和蓝点)
+# 视觉对位引擎 (完美清除蓝点，直接发送干净原生 Markdown)
 # ==============================================================================
 def _preprocess_md(content_md: str) -> str:
-    content_md = re.sub(r'^###\s+(.+)$', r'**\1**', content_md, flags=re.MULTILINE)
-    content_md = re.sub(r'^##\s+(.+)$', r'\n**▌ \1**', content_md, flags=re.MULTILINE)
+    # 兜底：强力抹除大模型可能私自加上的 H1 大标题
+    content_md = re.sub(r'^#\s*.*?(日报|The Pulse).*?\n', '', content_md, flags=re.MULTILINE|re.IGNORECASE)
+    
+    # 飞书特供：为核心 Emoji 标题加上加粗和模块装饰
+    content_md = re.sub(r'^(⚡️|🧠|💰|📊|📣)(.+)$', r'\n**▌ \1\2**', content_md, flags=re.MULTILINE)
+    content_md = re.sub(r'^(🔁)(.+)$', r'**\1\2**', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'^\s*---\s*$', '\n<HR>\n', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
     return content_md.strip()
@@ -428,7 +441,7 @@ def _split_to_elements(content_md: str) -> list:
                 elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = para
             else: chunk = chunk + "\n\n" + para if chunk else para
             
-    # 让飞书原生的 markdown 解析器去处理 "> "，飞书原生会渲染出完美的灰色引用竖线框
+    # 让飞书原生的 markdown 解析器去处理 "> "，渲染出纯正的灰色竖线框
     if chunk.strip(): elements.append({"tag": "markdown", "content": chunk.strip()})
     return elements
 
@@ -444,8 +457,14 @@ def send_to_feishu_card(content_md: str, today_str: str, model_label: str = "Cla
         },
     }
     for url in webhooks:
-        try: requests.post(url, json=card_payload, timeout=20)
-        except Exception: pass
+        try: 
+            resp = requests.post(url, json=card_payload, timeout=20)
+            if resp.status_code != 200 or resp.json().get("code") != 0:
+                print(f"  ❌ 飞书推送失败详情: {resp.text}", flush=True)
+            else:
+                print("  ✅ 飞书推送成功", flush=True)
+        except Exception as e:
+            print(f"  ❌ 飞书网络异常: {e}", flush=True)
 
 def _md_to_html(text):
     lines = text.split("\n")
@@ -456,12 +475,12 @@ def _md_to_html(text):
         line = line.strip()
         if not line: continue
 
-        # 🚨 原声态引用体：渲染为左侧深色竖线 + 灰底块，极致复刻截图效果
+        # 🚨 引用体：渲染为左侧深色竖线 + 灰底块，极致复刻原生卡片效果
         if line.startswith('>'):
             content = line[1:].strip()
             content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', content)
             if not in_quote:
-                html_lines.append('<blockquote style="margin: 12px 0; padding: 10px 16px; color: #555; background-color: #f4f7f9; border-left: 4px solid #8c98a4; border-radius: 4px; font-size: 15px; line-height: 1.6;">')
+                html_lines.append('<blockquote style="margin: 12px 0; padding: 10px 16px; color: #555; background-color: #f8f9fa; border-left: 4px solid #8c98a4; border-radius: 4px; font-size: 15px; line-height: 1.6;">')
                 in_quote = True
             html_lines.append(f'<p style="margin: 4px 0;">{content}</p>')
             continue
@@ -470,39 +489,40 @@ def _md_to_html(text):
                 html_lines.append('</blockquote>')
                 in_quote = False
 
-        # 🚨 剔除可能带有列表符的乱码，防止产生蓝色点点
-        if re.match(r'^-?\s*\**[🔥⚔️📌]', line):
-            line = re.sub(r'^-?\s*', '', line) 
+        # 🚨 终极清洗：剔除可能带有的 - 或 * 列表符，防止产生烦人的蓝点
+        if re.match(r'^[-*]\s*[🔥⚔️📌]', line):
+            line = re.sub(r'^[-*]\s*', '', line) 
+            
+        if line.startswith('🔥') or line.startswith('⚔️') or line.startswith('📌'):
             converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#d35400;">\1</strong>', line)
-            html_lines.append(f'<p style="margin:8px 0; font-size:15px; line-height:1.6;">{converted}</p>')
+            html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6; background:#fff5f5; padding: 6px 10px; border-radius: 4px;">{converted}</p>')
             continue
 
-        # 🗣️ 账号行
+        # 🗣️ 账号行对位
         if line.startswith('🗣️'):
             converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#2980b9;">\1</strong>', line)
-            html_lines.append(f'<p style="margin:16px 0 4px 0; font-size:14px; font-weight:bold;">{converted}</p>')
+            html_lines.append(f'<p style="margin:16px 0 4px 0; font-size:14px; font-weight:bold; color:#2c3e50;">{converted}</p>')
             continue
 
         # Headers
-        m = re.match(r'^##\s+(.+)$', line)
-        if m:
-            html_lines.append(f'<h3 style="margin:24px 0 10px 0;font-size:17px;border-left:4px solid #4A90E2;padding-left:10px;color:#2c3e50;">{m.group(1)}</h3>')
+        clean_line = re.sub(r'^#+\s*', '', line)
+        if '⚡️ 今日看板' in clean_line or '🧠 深度叙事追踪' in clean_line or '💰 资本与估值雷达' in clean_line or '📊 风险与中国视角' in clean_line or '📣 今日精选推文' in clean_line:
+            html_lines.append(f'<h3 style="margin:24px 0 10px 0;font-size:17px;border-left:4px solid #4A90E2;padding-left:10px;color:#2c3e50;font-weight:bold;">{clean_line}</h3>')
             continue
             
-        m3 = re.match(r'^###\s+(.+)$', line)
-        if m3:
-            html_lines.append(f'<h4 style="margin:20px 0 12px 0; font-size:16px; color:#e74c3c; font-weight:bold;">{m3.group(1)}</h4>')
+        if '🔁' in clean_line:
+            html_lines.append(f'<h4 style="margin:20px 0 12px 0; font-size:16px; color:#e74c3c; font-weight:bold;">{clean_line}</h4>')
             continue
             
-        if re.match(r'^\s*---\s*$', line) or line == '<HR>':
+        if clean_line == '---' or clean_line == '<HR>':
             html_lines.append('<hr style="border:none;border-top:1px dashed #dcdde1;margin:24px 0 20px 0;"/>')
             continue
             
-        if line.startswith('💡'):
-            html_lines.append(f'<div style="background:#f4f8fb; padding:12px; border-radius:6px; margin:12px 0; font-size:14px; color:#2c3e50;">{line}</div>')
+        if clean_line.startswith('💡'):
+            html_lines.append(f'<div style="background:#f4f8fb; padding:12px; border-radius:6px; margin:12px 0; font-size:14px; color:#2c3e50;">{clean_line}</div>')
             continue
             
-        converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#2c3e50;">\1</strong>', line)
+        converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#2c3e50;">\1</strong>', clean_line)
         html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6; color:#333;">{converted}</p>')
 
     if in_quote:
@@ -512,7 +532,9 @@ def _md_to_html(text):
 
 def build_wechat_html(text, cover_url="", insight=""):
     cover_block = f'<p style="text-align:center;margin:0 0 16px 0;"><img src="{cover_url}" style="max-width:100%;border-radius:8px;" /></p>' if cover_url else ""
-    insight_block = f'<div style="border-radius:8px;background:#FFF7E6;padding:12px 14px;margin:0 0 16px 0;"><div style="font-weight:bold;margin-bottom:6px;">Insight</div><div>{insight.replace(chr(10), "<br/>")}</div></div>' if insight else ""
+    # 🚨 更改 Insight 标题内容
+    insight_block = f'<div style="border-radius:8px;background:#FFF7E6;padding:12px 14px;margin:0 0 16px 0;"><div style="font-weight:bold;margin-bottom:6px;">Insight | 昨晚硅谷在聊啥？</div><div>{insight.replace(chr(10), "<br/>")}</div></div>' if insight else ""
+    text = clean_format(text)
     return cover_block + insight_block + _md_to_html(text)
 
 def push_to_jijyun(html_content, title, cover_url=""):
@@ -520,7 +542,7 @@ def push_to_jijyun(html_content, title, cover_url=""):
     try: requests.post(JIJYUN_WEBHOOK_URL, json={"title": title, "author": "Prinski", "html_content": html_content, "cover_jpg": cover_url}, timeout=30)
     except Exception: pass
 
-def save_daily_data(today_str: str, post_objects: list, report_text: str):
+def save_daily_data(today_str: post_objects: list, report_text: str):
     data_dir = Path(f"data/{today_str}")
     data_dir.mkdir(parents=True, exist_ok=True)
     combined_txt = "\n".join(json.dumps(obj, ensure_ascii=False) for obj in post_objects)
@@ -533,15 +555,17 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.0 (双擎搜索防漏 + 原声还原版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.2 (原声竖线对位 + 终结Unknown - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
+    
+    # 🚨 第一级与发现级：同时拉取专家数据与全网爆发热点
     all_raw_tweets = fetch_all_tweets_batched(ALL_ACCOUNTS)
     
     if not all_raw_tweets:
         print("⚠️ 未能抓取推文，链路测试...", flush=True)
-        all_raw_tweets = [{"screen_name": "elonmusk", "text": "Fallback mode", "favorites": 100, "created_at": "0101"}]
+        all_raw_tweets = [{"screen_name": "elonmusk", "text": "Fallback mode", "favorites": 100, "created_at": "0101", "replies": 50}]
         
     all_posts_flat = []
     
@@ -564,8 +588,10 @@ def main():
                 "qt": t.get("quote_text", "")[:200]
             })
 
+    # 【第二级：高热提纯与定点爆破】
     all_posts_flat.sort(key=lambda x: x["l"], reverse=True)
     
+    # 取最热的前 30 条喂给大模型
     final_feed = all_posts_flat[:30]
     top_3_tweets = [t for t in final_feed if t.get("tweet_id")][:3]
     
@@ -603,7 +629,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.0 运行完毕！", flush=True)
+    print("\n🎉 V6.2 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
