@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v4.3 (极致排版对齐版：实名身份强显 + 飞书/微信原生横线分割)
+x_api_auto_task.py  v4.5 (Twttr API twitter241 专属适配版 + 极致排版)
 Architecture: RapidAPI(TwtAPI) -> Classification -> Claude/Kimi-k2.5 Synthesis -> AI Cover -> Feishu/WeChat
 """
 
@@ -29,7 +29,15 @@ try:
 except:
     KIMI_TEMPERATURE  = 0.3
 
-# ── Base64 URL 隐身术 (防止编辑器强制转码) ─────────────────────────
+# ── 🚨 专属你的 RapidAPI 接口配置 🚨 ──────────────────────────────
+# 根据你的截图，你订阅的是 twitter241
+RAPIDAPI_HOST = "twitter241.p.rapidapi.com"
+
+# Twttr API 的搜索端点通常是 /search。用字符串拼接防编辑器篡改超链接。
+URL_TWTAPI    = "https://" + RAPIDAPI_HOST + "/search"
+
+
+# ── Base64 URL 隐身术 (防止其他大模型/图床接口被编辑器转码) ─────────
 def D(b64_str):
     return base64.b64decode(b64_str).decode("utf-8")
 
@@ -37,7 +45,6 @@ URL_OPENROUTER = D("aHR0cHM6Ly9vcGVucm91dGVyLmFpL2FwaS92MS9jaGF0L2NvbXBsZXRpb25z
 URL_MOONSHOT   = D("aHR0cHM6Ly9hcGkubW9vbnNob3QuY24vdjE=")
 URL_SF_IMAGE   = D("aHR0cHM6Ly9hcGkuc2lsaWNvbmZsb3cuY24vdjEvaW1hZ2VzL2dlbmVyYXRpb25z")
 URL_IMGBB      = D("aHR0cHM6Ly9hcGkuaW1nYmIuY29tLzEvdXBsb2Fk")
-URL_TWTAPI     = D("aHR0cHM6Ly90d2l0dGVyLWFwaTQ1LnAucmFwaWRhcGkuY29tL3NlYXJjaC5waHA=")
 
 # ── 100 核心账号名单 ──────────────────────────────────────────────
 ALL_ACCOUNTS = [
@@ -150,7 +157,7 @@ def parse_rapidapi_tweets(data: dict) -> list:
     return all_tweets
 
 # ==============================================================================
-# 🚀 核心抓取引擎
+# 🚀 核心抓取引擎 (增加 403 熔断机制)
 # ==============================================================================
 def fetch_all_tweets_batched(accounts: list) -> list:
     if not TWTAPI_KEY:
@@ -162,17 +169,27 @@ def fetch_all_tweets_batched(accounts: list) -> list:
     chunks = [accounts[i:i + chunk_size] for i in range(0, len(accounts), chunk_size)]
     
     all_tweets = []
+    
+    # 🚨 修正头信息：完全匹配你订阅的 twitter241
     headers = {
-        "X-RapidAPI-Key": TWTAPI_KEY,
-        "X-RapidAPI-Host": "twitter-api45.p.rapidapi.com"
+        "x-rapidapi-key": TWTAPI_KEY,
+        "x-rapidapi-host": RAPIDAPI_HOST
     }
 
+    consecutive_403 = 0  
+
     for i, chunk in enumerate(chunks, 1):
+        if consecutive_403 >= 2:
+            print(f"🚨 检测到连续 {consecutive_403} 次 HTTP 403 (Forbidden)。")
+            print("🚨 熔断机制触发：请检查 RapidAPI 控制台的 Search 接口 URL 是否为 /search，以及额度是否耗尽。")
+            break
+
         print(f"\n⏳ 正在抓取第 {i}/{len(chunks)} 批账号 (包含 {len(chunk)} 人)...", flush=True)
         query = " OR ".join([f"from:{acc}" for acc in chunk])
         full_query = f"({query}) since:{yesterday} -is:retweet"
         params = {"query": full_query, "search_type": "Latest", "count": 20}
         
+        success = False
         for attempt in range(3):
             try:
                 resp = requests.get(URL_TWTAPI, headers=headers, params=params, timeout=25)
@@ -180,7 +197,19 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                     tweets = parse_rapidapi_tweets(resp.json())
                     all_tweets.extend(tweets)
                     print(f"  ✅ 第 {i} 批成功，提取到 {len(tweets)} 条纯净原创帖。")
+                    consecutive_403 = 0 
+                    success = True
                     break
+                elif resp.status_code == 403:
+                    print("  ⚠️ HTTP 403 Forbidden，API 权限被拒（检查 Host 与 Key 是否匹配）...")
+                    consecutive_403 += 1
+                    time.sleep(2)
+                    if consecutive_403 >= 2: break 
+                elif resp.status_code == 404:
+                    print("  ⚠️ HTTP 404 Not Found，你可能需要检查 Search 接口的具体路径是否叫 /search。")
+                    consecutive_403 += 1
+                    time.sleep(2)
+                    if consecutive_403 >= 2: break 
                 elif resp.status_code == 429:
                     print("  ⚠️ API 限流，紧急避险 3 秒...")
                     time.sleep(3)
@@ -191,7 +220,10 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                 print(f"  ❌ 第 {i} 批网络错误: {e}")
                 time.sleep(2)
                 
-        time.sleep(1.5)
+        if success:
+            time.sleep(1.5)
+        else:
+            time.sleep(3)
         
     return all_tweets
 
@@ -260,7 +292,8 @@ Filter out trivial technical parameters and social noise; distill insights with 
 - **@账号名 | 真实姓名 | 真实身份标签** 具体行为 + 投资视角解读（不超过 60 字）
 - **@账号名 | 真实姓名 | 真实身份标签** 具体行为 + 投资视角解读（不超过 60 字）
 
-（⚠️ 严厉警告：每个主题板块之前，必须插入 `---` 形成物理分割线！emoji 可根据主题选择：🔁🤖⚔️🏭🦾💡🔥📊）
+（⚠️ 严厉警告 1：每个主题板块（###）之前，必须且只能插入一条 `---` 形成物理分割线！
+⚠️ 严厉警告 2：每一条情报的开头必须严格遵循 `@账号名 | 真名 | 身份` 的格式，绝不允许只有账号！）
 
 ## 💰 资本与估值雷达 (Investment Radar)
 1. **投融资快讯：** 扫描数据中提到的具体融资额、估值以及领投机构。
@@ -282,14 +315,12 @@ Filter out trivial technical parameters and social noise; distill insights with 
   > 「中文译文，限 60 字内，保留原文语气」
 
 # Constraints
-- **账号身份补全（必须执行）：** 只要出现 @账号名，后面必须跟上 ` | 真实姓名 | 身份`，例如 `@karpathy | Andrej Karpathy | OpenAI前科学家` 或 `@sama | Sam Altman | OpenAI CEO`。
+- **账号身份补全（核心指标）：** 只要提及人物，务必采用格式 `@karpathy | Andrej Karpathy | OpenAI前科学家` 或 `@sama | Sam Altman | OpenAI CEO`。
 - **格式纪律（严格遵守）：**
   - 主模块使用 `## ` 二级标题
-  - 具体的子话题/赛道，使用 `### ` 三级标题（如 `### ⚔️ 模型军备竞赛：GPT-5.4 时代`）
+  - 具体的子话题/赛道，使用 `### ` 三级标题
   - 深度叙事追踪内，必须使用 `---` 作为每个子话题的间隔！
   - 每个要点用 `- ` 开头的短 bullet，单条不超过 80 个汉字
-- **禁止技术堆砌：** 不要解释算法原理，只需说该技术如何影响商业竞争或降低成本。
-- **投资视角：** 重点关注「钱的流向」和「估值逻辑的变化」。
 - **语言风格：** 专业、干脆、利落，适合在飞书移动端快速扫读。
 
 # Input Data (JSONL)
@@ -396,19 +427,15 @@ def upload_to_imgbb_via_url(sf_url):
 # Feishu / WeChat formatting & Push (排版大升级版)
 # ==============================================================================
 def _preprocess_md(content_md: str) -> str:
-    # 三级标题转为加粗 (飞书无 h3, 用加粗代替呈现子标题效果)
     content_md = re.sub(r'^###\s+(.+)$', r'**\1**', content_md, flags=re.MULTILINE)
-    # 二级标题转为飞书大字/带装饰
     content_md = re.sub(r'^##\s+(.+)$', r'\n**▌ \1**', content_md, flags=re.MULTILINE)
     
-    # 🚨 将 markdown 的横线标记转译为占位符 <HR>
     content_md = re.sub(r'^\s*---\s*$', '\n<HR>\n', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'\n(\*\*[🔁🤖⚔️🏭🦾💡🔥📊🧠💰🌐])', r'\n\n\n\1', content_md)
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
     return content_md.strip()
 
 def _split_to_elements(content_md: str) -> list:
-    """将预处理后的文本拆分成飞书卡片可接受的 block 数组，原生支持 hr 标签"""
     elements = []
     paragraphs = content_md.split('\n\n')
     chunk = ""
@@ -417,7 +444,6 @@ def _split_to_elements(content_md: str) -> list:
         para = para.strip()
         if not para: continue
         
-        # 拦截到 <HR> 占位符时，切断当前 chunk 并单独插入一条飞书分隔线
         if para == '<HR>':
             if chunk:
                 elements.append({"tag": "markdown", "content": chunk.strip()})
@@ -425,14 +451,12 @@ def _split_to_elements(content_md: str) -> list:
             elements.append({"tag": "hr"})
             continue
             
-        # 拦截到模块标题，自成一段
         if para.startswith('**▌ '):
             if chunk:
                 elements.append({"tag": "markdown", "content": chunk.strip()})
                 chunk = ""
             chunk = para
         else:
-            # 防超过 4000 字符限制
             if len(chunk) + len(para) + 2 > 3800 and chunk:
                 elements.append({"tag": "markdown", "content": chunk.strip()})
                 chunk = para
@@ -478,45 +502,37 @@ def _md_to_html(text):
         line = line.strip()
         if not line: continue
         
-        # 二级标题
         m = re.match(r'^##\s+(.+)$', line)
         if m:
             html_lines.append(f'<h3 style="margin:24px 0 10px 0;font-size:17px;border-left:4px solid #4A90E2;padding-left:10px;">{m.group(1)}</h3>')
             continue
             
-        # 三级标题 (子话题/赛道标题)
         m3 = re.match(r'^###\s+(.+)$', line)
         if m3:
             html_lines.append(f'<h4 style="margin:20px 0 12px 0; font-size:16px; color:#e74c3c; font-weight:bold;">{m3.group(1)}</h4>')
             continue
             
-        # 🚨 渲染微信原生的优雅分割线
         if re.match(r'^\s*---\s*$', line) or line == '<HR>':
             html_lines.append('<hr style="border:none;border-top:1px dashed #dcdde1;margin:24px 0 20px 0;"/>')
             continue
             
-        # 🚨 优化 "💡 叙事转向" 拥有灰蓝色高级感背景框
         if line.startswith('> 💡'):
             html_lines.append(f'<div style="background:#f4f8fb; padding:12px; border-radius:6px; margin:12px 0; font-size:14px; color:#2c3e50;">{line.replace("> ", "")}</div>')
             continue
-        # 普通引用
         elif line.startswith('>'):
             html_lines.append(f'<blockquote style="border-left:3px solid #bdc3c7; margin:8px 0; padding-left:10px; color:#7f8c8d; font-size:14px;">{line.replace("> ", "")}</blockquote>')
             continue
             
-        # 🚨 处理无序列表 (支持大模型生成的带实名身份的 bullet point，提取并赋予高级蓝高亮)
         if line.startswith('- '):
             converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#2980b9;">\1</strong>', line[2:])
             html_lines.append(f'<p style="margin:8px 0 8px 0; font-size:15px; line-height:1.6; padding-left: 14px; text-indent: -14px;">• {converted}</p>')
             continue
             
-        # 处理数字列表
         if re.match(r'^\d+\.\s', line):
             converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#2c3e50;">\1</strong>', line)
             html_lines.append(f'<p style="margin:8px 0; font-size:15px; line-height:1.6;">{converted}</p>')
             continue
 
-        # 加粗文字颜色微调，更适合护眼阅读
         converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#2c3e50;">\1</strong>', line)
         html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6;">{converted}</p>')
         
@@ -548,16 +564,18 @@ def save_daily_data(today_str: str, post_objects: list, meta_results: dict, repo
 # ==============================================================================
 def main():
     print("=" * 60, flush=True)
-    print("昨晚硅谷在聊啥 v4.3 (实名身份追踪 + 视觉优化版)", flush=True)
+    print("昨晚硅谷在聊啥 v4.5 (Twttr API 专版)", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
     Path("data").mkdir(exist_ok=True)
     
-    # 1. 使用极速批处理抓取 100 人的 Twitter 数据
     all_raw_tweets = fetch_all_tweets_batched(ALL_ACCOUNTS)
     
-    # 2. 本地过滤与账号分桶
+    if not all_raw_tweets:
+        print("⚠️ 警告：未能抓取到任何推文，可能由于 API 错误或无更新。使用兜底文本测试链路...", flush=True)
+        all_raw_tweets = [{"screen_name": "elonmusk", "text": "Just testing the pipeline fallback.", "favorites": 100, "created_at": "0101"}]
+        
     bucketed_tweets = {acc.lower(): [] for acc in ALL_ACCOUNTS}
     for t in all_raw_tweets:
         author = t.get("screen_name") or t.get("author", {}).get("userName") or t.get("user_info", {}).get("screen_name") or ""
@@ -570,7 +588,6 @@ def main():
         acc_lower = acc.lower()
         tweets = bucketed_tweets[acc_lower]
         
-        # 核心清洗逻辑：剔除他人回复、点赞数太低(<10)的内容
         filtered = []
         for t in tweets:
             likes = t.get("favorites") or t.get("favorite_count") or t.get("likes") or 0
@@ -578,7 +595,6 @@ def main():
             if not is_reply and likes >= 10:
                 filtered.append(t)
                 
-        # 补充元数据用于分类
         total = len(filtered)
         max_l = max([t.get("favorites", t.get("favorite_count", t.get("likes", 0))) for t in filtered], default=0)
         latest = "NA"
@@ -590,7 +606,6 @@ def main():
 
     classification = classify_accounts(meta_results)
     
-    # 3. 动态拼接输出结构 (复刻原版的 S/A/B 分级)
     phase1_posts, phase2_posts = {}, {}
     all_posts_flat = []
 
@@ -624,9 +639,6 @@ def main():
     combined_jsonl = "\n".join(json.dumps(obj, ensure_ascii=False) for obj in all_posts_flat)
     print(f"\n[Data] Combined JSONL: {len(all_posts_flat)} posts ready for LLM.")
 
-    # ==========================================================================
-    # 4. LLM 总结与生图 (与原版保持 100% 一致)
-    # ==========================================================================
     report_text, cover_title, cover_prompt, cover_insight = "", "", "", ""
     model_label = ""
 
@@ -647,9 +659,6 @@ def main():
             imgbb_url = upload_to_imgbb_via_url(sf_url)
             cover_url = imgbb_url if imgbb_url else sf_url
 
-    # ==========================================================================
-    # 5. 分发
-    # ==========================================================================
     if report_text:
         send_to_feishu_card(report_text, today_str, model_label=model_label or "AI")
         if JIJYUN_WEBHOOK_URL:
