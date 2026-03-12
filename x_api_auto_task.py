@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.5 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位版)
+x_api_auto_task.py  v6.6 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位 + 多主题深度挖掘版)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -283,7 +283,7 @@ def fetch_top_comments(tweet_id: str) -> list:
     return []
 
 # ==============================================================================
-# LLM 提示词 (千问调教版：严格竖线对位、加粗规则、禁用乱码)
+# LLM 提示词 (千问调教版：严格竖线对位、加粗规则、禁用乱码、多主题挖掘)
 # ==============================================================================
 def _build_llm_prompt(combined_jsonl: str, today_str: str) -> str:
     return f"""
@@ -302,11 +302,9 @@ Pay special attention to posts that include a "comments" array—this represents
 ---
 
 🧠 深度叙事追踪 (Thematic Narratives)
-[直接开始输出主题，禁止多余的话]
+[请根据提供的数据，深度挖掘 3 到 5 个最重要的话题方向。请严格按照以下格式循环输出每个话题，禁止多余的话]
 
----
-
-🔁 主题标题
+🔁 [主题标题 1]
 
 💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
 
@@ -314,6 +312,17 @@ Pay special attention to posts that include a "comments" array—this represents
 > 「[此处输出推文内容的纯中文高质量翻译。严禁照搬原英文，必须全部翻译！如果是多句内容，请用空格代替原文的换行符，必须合成一整段单行输出，绝对禁止换行导致引用块断裂]」 (❤️ [赞数] | 💬 [评论数])
 **🔥 核心共识**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 **⚔️ 最大分歧**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
+
+🔁 [主题标题 2]
+
+💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
+
+🗣️ @账号名 | Title
+> 「[此处输出推文内容的纯中文高质量翻译...]」 (❤️ [赞数] | 💬 [评论数])
+**🔥 核心共识**：[直接输出观点文本...]
+**⚔️ 最大分歧**：[直接输出观点文本...]
+
+[请根据以上格式继续输出第 3 到第 5 个主题...]
 
 ---
 
@@ -614,7 +623,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.5 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.6 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位 + 多主题挖掘版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -691,7 +700,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.5 运行完毕！", flush=True)
+    print("\n🎉 V6.6 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
