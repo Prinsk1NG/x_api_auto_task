@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v5.8 (Grok策略优化版：双轨搜索防漏报 + 绝对保留原有排版)
-Architecture: RapidAPI(TwtAPI) -> Classification -> Top3 Comments -> Claude/Kimi Synthesis -> AI Cover
+x_api_auto_task.py  v5.9 (Grok双重搜索策略 + 终结Unknown + 稳定美观排版)
+Architecture: Expert Track + Global Discovery -> Deep Parse -> LLM Synthesis -> UI Rendering
 """
 
 import os
@@ -18,8 +18,8 @@ from openai import OpenAI
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🚨 模式切换开关 🚨
-# False = 全量运行（扫 100 人，消耗 13 次 API 额度，推荐！）
-# True  = 测试模式（只扫前 10 人，消耗 4 次 API 额度）
+# False = 全量运行（扫 100 人 + 2次全球热点搜索，消耗约 15 次 API，推荐！）
+# True  = 测试模式（只扫前 10 人 + 2次全球热点搜索，消耗约 4 次 API 额度）
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TEST_MODE = True
 
@@ -29,7 +29,7 @@ SF_API_KEY          = os.getenv("SF_API_KEY", "")
 KIMI_API_KEY        = os.getenv("KIMI_API_KEY", "")
 OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY", "")
 TWTAPI_KEY          = os.getenv("TWTAPI_KEY", "")
-IMGBB_API_KEY       = os.getenv("IMGBB_API_KEY", "") # 🚨 修复：补上了这行至关重要的图床变量声明
+IMGBB_API_KEY       = os.getenv("IMGBB_API_KEY", "") 
 
 OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.7-sonnet")
 try:
@@ -131,89 +131,106 @@ def clean_format(text: str) -> str:
     return text
 
 # ==============================================================================
-# 🚀 全景递归解析引擎 (完美适配你上传的 JSON 结构)
+# 🚀 降维解析引擎 (终结 Unknown Bug，无论藏多深都能挖出 ScreenName)
 # ==============================================================================
 def parse_rapidapi_tweets(data) -> list:
     all_tweets = []
-
+    
     def recurse(obj):
         if isinstance(obj, dict):
-            if obj.get("__typename") == "Tweet" or ("legacy" in obj and "core" in obj):
-                legacy = obj.get("legacy", {})
-                user_legacy = obj.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {})
-                text = legacy.get("full_text") or legacy.get("text")
-                if text:
-                    all_tweets.append({
-                        "tweet_id": str(obj.get("rest_id") or legacy.get("id_str") or ""),
-                        "screen_name": user_legacy.get("screen_name", "Unknown"),
-                        "text": text,
-                        "favorites": safe_int(legacy.get("favorite_count", 0)),
-                        "created_at": legacy.get("created_at", ""),
-                        "reply_to": legacy.get("in_reply_to_screen_name") or legacy.get("in_reply_to_user_id_str"),
-                    })
-                    return
-
+            # 提取推文文本内容作为基准锚点
             text = obj.get("full_text") or obj.get("text")
-            if text and ("user" in obj or "author" in obj or "screen_name" in obj):
-                sn = obj.get("screen_name")
+            if not text and obj.get("legacy"):
+                text = obj["legacy"].get("full_text") or obj["legacy"].get("text")
+                
+            if text and isinstance(text, str):
+                # 🔍 核心修复：多维度、无死角提取 ScreenName，彻底消灭 @unknown
+                sn = None
+                
+                # 尝试路径 1: 官方 V2 的深层嵌套 (core -> user_results)
+                try: sn = obj.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
+                except: pass
+                
+                # 尝试路径 2: 扁平结构的直接字段
+                if not sn: sn = obj.get("screen_name")
+                
+                # 尝试路径 3: user 或 author 对象内的字段
                 if not sn:
-                    u = obj.get("user") or obj.get("author") or {}
-                    sn = u.get("screen_name") or u.get("userName")
+                    u = obj.get("user") or obj.get("author") or obj.get("user_info") or {}
+                    sn = u.get("screen_name") or u.get("userName") or u.get("username")
+                
+                # 尝试路径 4: 从 legacy 对象中提 (部分转发的结构)
+                if not sn and obj.get("legacy"):
+                    sn = obj["legacy"].get("screen_name")
 
-                t_id = obj.get("id_str") or obj.get("id") or obj.get("tweet_id") or ""
-                fav = obj.get("favorite_count") or obj.get("favorites") or obj.get("likes") or 0
-                reply = obj.get("in_reply_to_screen_name") or obj.get("reply_to") or obj.get("is_reply")
+                if sn:
+                    t_id = obj.get("rest_id") or obj.get("id_str") or obj.get("id") or obj.get("tweet_id")
+                    if not t_id and obj.get("legacy"): t_id = obj["legacy"].get("id_str")
+                    
+                    fav = obj.get("favorite_count") or obj.get("favorites") or obj.get("likes") or 0
+                    if not fav and obj.get("legacy"): fav = obj["legacy"].get("favorite_count", 0)
 
-                all_tweets.append({
-                    "tweet_id": str(t_id),
-                    "screen_name": sn or "Unknown",
-                    "text": text,
-                    "favorites": safe_int(fav),
-                    "created_at": obj.get("created_at", ""),
-                    "reply_to": reply,
-                })
-                return
+                    rep = obj.get("reply_count") or obj.get("replies") or 0
+                    if not rep and obj.get("legacy"): rep = obj["legacy"].get("reply_count", 0)
+                    
+                    created_at = obj.get("created_at")
+                    if not created_at and obj.get("legacy"): created_at = obj["legacy"].get("created_at", "")
+                    
+                    reply_to = obj.get("in_reply_to_screen_name") or obj.get("reply_to") or obj.get("is_reply")
+                    if not reply_to and obj.get("legacy"): reply_to = obj["legacy"].get("in_reply_to_screen_name")
 
+                    if str(t_id):
+                        all_tweets.append({
+                            "tweet_id": str(t_id),
+                            "screen_name": sn,
+                            "text": text,
+                            "favorites": safe_int(fav),
+                            "replies": safe_int(rep),  # 提取评论数供大模型分析
+                            "created_at": created_at,
+                            "reply_to": reply_to,
+                        })
+                        return # 找到该节点，停止向内深挖，防止冗余
+            
             for v in obj.values():
                 recurse(v)
-
+                
         elif isinstance(obj, list):
             for item in obj:
                 recurse(item)
 
     recurse(data)
-
+    
+    # 根据 Tweet_ID 全局去重
     seen = set()
     unique = []
     for t in all_tweets:
-        tid = t["tweet_id"] or t["text"]
+        tid = t["tweet_id"]
         if tid not in seen:
             seen.add(tid)
             unique.append(t)
-
+            
     return unique
 
 # ==============================================================================
-# 🚀 抓取引擎：专家+全网探测双轨制 (完全还原 Grok 的搜索思路)
+# 🚀 抓取引擎：Grok 双轨搜索策略融合版
 # ==============================================================================
 def fetch_all_tweets_batched(accounts: list) -> list:
     if not TWTAPI_KEY: return []
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     chunk_size = 10
     chunks = [accounts[i:i + chunk_size] for i in range(0, len(accounts), chunk_size)]
-
+    
     all_tweets = []
     headers = {"x-rapidapi-key": TWTAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
     consecutive_errors = 0  
 
-    # 1. 专家雷达 (保证垂直深度：搜寻 100 位核心大佬)
+    # 🟢 引擎一：专家雷达 (保证垂直深度，防漏日常洞察)
     for i, chunk in enumerate(chunks, 1):
         if consecutive_errors >= 2: break
         print(f"\n⏳ [专家扫盘] 正在抓取第 {i}/{len(chunks)} 批账号...", flush=True)
         query = " OR ".join([f"from:{acc}" for acc in chunk])
-
         params = {"query": f"({query}) since:{yesterday} -is:retweet", "type": "Latest", "count": "40"}
-
+        
         success = False
         for attempt in range(3):
             try:
@@ -231,22 +248,21 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                     if consecutive_errors >= 2: break 
                 else: time.sleep(2)
             except Exception: time.sleep(2)
-
+                
         if success: time.sleep(1.5)
         else: time.sleep(3)
 
-    # 2. 🚨 Grok 启发优化：全网双重探测模式 (打破信息茧房，捕捉突发热点)
-    print(f"\n📡 [全网探测] 启动 Grok 搜索策略，跨出信息茧房...", flush=True)
-    
+    # 🟢 引擎二：Grok 全网双重探测模式 (打破信息茧房，捕捉爆发性突发)
+    print(f"\n📡 [全网探测] 启动 Grok 高级语法搜索策略，扫描全球突发热点...", flush=True)
     grok_queries = [
-        # 策略 1：广覆盖高互动 (高赞大事件)
+        # 策略A：广覆盖高互动 (只要是AI话题且点赞破50，无视账号身份全部抓取)
         f'(AI OR "artificial intelligence" OR LLM OR OpenAI OR xAI OR Grok OR Anthropic OR DeepMind OR Claude) since:{yesterday} min_faves:50 -is:retweet',
-        # 策略 2：聚焦新闻与新产品发布 (带链接或媒体)
+        # 策略B：聚焦新闻与新产品发布 (带链接或多媒体的发布会帖子)
         f'(AI OR LLM) (release OR launch OR breakthrough OR update) since:{yesterday} min_faves:30 (filter:links OR filter:media) -is:retweet'
     ]
 
     for idx, q in enumerate(grok_queries, 1):
-        print(f"  🔍 执行 Grok 策略 {idx}/2...", flush=True)
+        print(f"  🔍 正在执行 Grok 策略 {idx}/2...", flush=True)
         params_discovery = {"query": q, "type": "Top", "count": "20"}
         for attempt in range(3):
             try:
@@ -254,23 +270,14 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                 if resp.status_code == 200:
                     tweets = parse_rapidapi_tweets(resp.json())
                     all_tweets.extend(tweets)
-                    print(f"    ✅ 策略 {idx} 成功，捕获 {len(tweets)} 条全网突发情报。")
+                    print(f"    ✅ 策略 {idx} 成功，全网捕获 {len(tweets)} 条高赞情报。")
                     break
                 elif resp.status_code in [403, 404]: break 
                 else: time.sleep(2)
             except Exception: time.sleep(2)
         time.sleep(1.5)
-
-    # 全局去重 (防止专家推文和全网热点重合导致数据冗余)
-    seen_ids = set()
-    final_tweets = []
-    for t in all_tweets:
-        tid = t.get("tweet_id") or t.get("text")
-        if tid not in seen_ids:
-            seen_ids.add(tid)
-            final_tweets.append(t)
-
-    return final_tweets
+        
+    return all_tweets
 
 # ==============================================================================
 # 🚀 抓取引擎：第二级 (定点爆破神评)
@@ -278,10 +285,10 @@ def fetch_all_tweets_batched(accounts: list) -> list:
 def fetch_top_comments(tweet_id: str) -> list:
     if not tweet_id or not TWTAPI_KEY: return []
     print(f"  🎯 [爆破] 正在深挖神评 (Tweet ID: {tweet_id})...", flush=True)
-
+    
     headers = {"x-rapidapi-key": TWTAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
     params = {"pid": tweet_id, "rankingMode": "Relevance", "count": "20"}
-
+    
     comments = []
     try:
         resp = requests.get(URL_COMMENTS, headers=headers, params=params, timeout=25)
@@ -293,11 +300,11 @@ def fetch_top_comments(tweet_id: str) -> list:
                     comments.append(f"@{c['screen_name']}: {text[:150]}")
     except Exception as e:
         print(f"  ⚠️ 神评获取失败: {e}", flush=True)
-
+        
     return comments[:5]
 
 # ==============================================================================
-# LLM 提示词 (排版格式一字未改)
+# LLM 提示词 (格式绝对保留不变)
 # ==============================================================================
 def _build_llm_prompt(combined_jsonl: str, today_str: str) -> str:
     return f"""
@@ -307,7 +314,7 @@ You are a top-tier AI industry primary market investment analyst with 10 years o
 Reply entirely in Chinese.
 
 # Task
-Analyze tweets from tech leaders and global breaking trends (data in JSONL at the end).
+Analyze tweets from tech leaders and their interactions/comments (data in JSONL at the end).
 Pay special attention to posts that include a "comments" array—this represents industry consensus or controversy. 
 
 # Output Structure (strictly follow Markdown format)
@@ -443,6 +450,9 @@ def _preprocess_md(content_md: str) -> str:
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
     return content_md.strip()
 
+# ==============================================================================
+# 视觉对位：更稳定、美观地处理飞书 Note 卡片
+# ==============================================================================
 def _split_to_elements(content_md: str) -> list:
     elements = []
     paragraphs = content_md.split('\n\n')
@@ -454,15 +464,17 @@ def _split_to_elements(content_md: str) -> list:
             if chunk: elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = ""
             elements.append({"tag": "hr"})
             continue
-        # ── 🚨 新增：识别引用推文卡片块 ──
-        if para.startswith('🗣️') and '**@' in para:
+        
+        # 🚨 极度稳定提取：捕捉以 🗣️ 开头的整个段落为 Note
+        if para.startswith('🗣️'):
             if chunk: elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = ""
             elements.append({
                 "tag": "note",
                 "elements": [{"tag": "lark_md", "content": para}],
-                "background_color": "grey"
+                "background_color": "grey" # 呈现高级灰卡片感
             })
             continue
+            
         if para.startswith('**▌ '):
             if chunk: elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = ""
             chunk = para
@@ -470,6 +482,7 @@ def _split_to_elements(content_md: str) -> list:
             if len(chunk) + len(para) + 2 > 3800 and chunk:
                 elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = para
             else: chunk = chunk + "\n\n" + para if chunk else para
+            
     if chunk.strip(): elements.append({"tag": "markdown", "content": chunk.strip()})
     return elements
 
@@ -488,6 +501,9 @@ def send_to_feishu_card(content_md: str, today_str: str, model_label: str = "Cla
         try: requests.post(url, json=card_payload, timeout=20)
         except Exception: pass
 
+# ==============================================================================
+# 视觉对位：微信 HTML 稳定呈现精美圆角阴影块
+# ==============================================================================
 def _md_to_html(text):
     lines = text.split("\n")
     html_lines = []
@@ -497,26 +513,29 @@ def _md_to_html(text):
         line = line.strip()
         if not line: continue
 
-        # ── 🚨 新增：识别引用推文卡片头 🗣️ **@账号名 | 真实姓名 | Title** ──
-        if line.startswith("🗣️") and "**@" in line:
-            html_lines.append('<div style="background:#f8f9fa; border-radius:12px; border-left:4px solid #3498db; padding:15px; margin:15px 0;">')
+        # 🚨 检查是否触发挥原声卡片头
+        if line.startswith("🗣️"):
+            # 开启高逼格背景容器 (含微阴影与圆角)
+            html_lines.append('<div style="background:#f4f7f9; border-radius:10px; border-left:4px solid #4A90E2; padding:12px 16px; margin:16px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">')
             header = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#2980b9;">\1</strong>', line)
-            html_lines.append(f'<p style="font-size:13px; margin-bottom:8px;">{header}</p>')
+            html_lines.append(f'<div style="font-size:13px; margin-bottom:8px; line-height:1.5;">{header}</div>')
             in_quote_box = True
             continue
 
-        # ── 🚨 新增：引用推文卡片体（> 行） ──
+        # 🚨 卡片内部正文提取
         if in_quote_box and line.startswith('>'):
             content = line[1:].strip()
             content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', content)
             html_lines.append(f'<p style="font-size:15px; line-height:1.6; color:#555; margin:5px 0;">{content}</p>')
+            
+            # 判断下一行还是不是引用，如果不是，就封口
             next_is_quote = any(lines[j].strip().startswith(">") for j in range(i+1, min(i+2, len(lines))))
             if not next_is_quote:
                 html_lines.append('</div>')
                 in_quote_box = False
             continue
 
-        # 若引用卡片后紧跟非 > 行，关闭卡片
+        # 防止由于断行导致卡片没闭合
         if in_quote_box:
             html_lines.append('</div>')
             in_quote_box = False
@@ -525,36 +544,36 @@ def _md_to_html(text):
         if m:
             html_lines.append(f'<h3 style="margin:24px 0 10px 0;font-size:17px;border-left:4px solid #4A90E2;padding-left:10px;">{m.group(1)}</h3>')
             continue
-
+            
         m3 = re.match(r'^###\s+(.+)$', line)
         if m3:
             html_lines.append(f'<h4 style="margin:20px 0 12px 0; font-size:16px; color:#e74c3c; font-weight:bold;">{m3.group(1)}</h4>')
             continue
-
+            
         if re.match(r'^\s*---\s*$', line) or line == '<HR>':
             html_lines.append('<hr style="border:none;border-top:1px dashed #dcdde1;margin:24px 0 20px 0;"/>')
             continue
-
+            
         if line.startswith('> 💡'):
             html_lines.append(f'<div style="background:#f4f8fb; padding:12px; border-radius:6px; margin:12px 0; font-size:14px; color:#2c3e50;">{line.replace("> ", "")}</div>')
             continue
         elif line.startswith('>'):
             html_lines.append(f'<blockquote style="border-left:3px solid #bdc3c7; margin:8px 0; padding-left:10px; color:#7f8c8d; font-size:14px;">{line.replace("> ", "")}</blockquote>')
             continue
-
+            
         if line.startswith('- **🔥') or line.startswith('- **⚔️'):
             converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#d35400;">\1</strong>', line[2:])
             html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6; background:#fff5f5; padding: 6px 10px; border-radius: 4px;">• {converted}</p>')
             continue
-
+            
         if line.startswith('- '):
             converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#2980b9;">\1</strong>', line[2:])
             html_lines.append(f'<p style="margin:8px 0 8px 0; font-size:15px; line-height:1.6; padding-left: 14px; text-indent: -14px;">• {converted}</p>')
             continue
-
+            
         converted = re.sub(r'\*\*([^*]+?)\*\*', r'<strong style="color:#2c3e50;">\1</strong>', line)
         html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6;">{converted}</p>')
-
+        
     return "".join(html_lines)
 
 def build_wechat_html(text, cover_url="", insight=""):
@@ -581,40 +600,46 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v5.8 (Grok策略搜索强化版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v5.9 (双擎扫盘 + 无损解析版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
-
+    
+    # 🚨 第一级与发现级：同时拉取专家数据与全网爆发热点
     all_raw_tweets = fetch_all_tweets_batched(ALL_ACCOUNTS)
+    
     if not all_raw_tweets:
         print("⚠️ 未能抓取推文，链路测试...", flush=True)
-        all_raw_tweets = [{"screen_name": "elonmusk", "text": "Fallback mode", "favorites": 100, "created_at": "0101"}]
-
+        all_raw_tweets = [{"screen_name": "elonmusk", "text": "Fallback mode", "favorites": 100, "created_at": "0101", "replies": 50}]
+        
     all_posts_flat = []
-
+    
     for t in all_raw_tweets:
         likes = t.get("favorites", 0)
         is_reply = bool(t.get("reply_to"))
-
+        
         if not is_reply or likes >= 0:
             tweet_id = t.get("tweet_id", "")
             text = t.get("text", "")
-
+            replies = t.get("replies", 0) # 提取评论数供展示
+            
             all_posts_flat.append({
                 "a": t.get("screen_name", "Unknown"), 
                 "tweet_id": tweet_id,
                 "l": likes, 
+                "r": replies, 
                 "t": parse_twitter_date(t.get("created_at", "")), 
                 "s": re.sub(r'https?://\S+', '', text).strip()[:600], 
                 "qt": t.get("quote_text", "")[:200]
             })
 
+    # 【第二级：高热提纯与定点爆破】
     all_posts_flat.sort(key=lambda x: x["l"], reverse=True)
-
+    
+    # 取最热的前 30 条喂给大模型
     final_feed = all_posts_flat[:30]
     top_3_tweets = [t for t in final_feed if t.get("tweet_id")][:3]
-
+    
     print(f"\n[深挖] 锁定今日最具争议的 {len(top_3_tweets)} 大话题，开始抓取评论区...")
     for t in top_3_tweets:
         comments = fetch_top_comments(t["tweet_id"])
@@ -622,7 +647,7 @@ def main():
             t["hot_comments"] = comments 
 
     combined_jsonl = "\n".join(json.dumps(obj, ensure_ascii=False) for obj in final_feed)
-
+    
     print(f"\n[Data] 组装完成：{len(final_feed)} 条推文 (含共识提纯数据) ready for LLM.")
 
     report_text, cover_title, cover_prompt, cover_insight = "", "", "", ""
@@ -635,7 +660,7 @@ def main():
         else:
             report_text, cover_title, cover_prompt, cover_insight = llm_call_kimi(combined_jsonl, today_str)
             if report_text: model_label = "Kimi-k2.5"
-
+    
     cover_url = ""
     if cover_prompt:
         sf_url = generate_cover_image(cover_prompt)
@@ -649,7 +674,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V5.8 运行完毕！", flush=True)
+    print("\n🎉 V5.9 Grok双擎优化版 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
