@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.5 (全面翻译 + 绝对防断裂单行引用 + 强力清洗臆造词版)
+x_api_auto_task.py  v6.5 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位版)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -21,7 +21,7 @@ from openai import OpenAI
 # False = 全量运行（扫 100 人 + 2次全球热点搜索，推荐！）
 # True  = 测试模式（只扫前 10 人 + 2次全球热点搜索，省配额）
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TEST_MODE = True
+TEST_MODE = False
 
 # ── 环境变量 (严格对齐 Secrets 规范) ──────────────────────────────
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
@@ -446,8 +446,8 @@ def _preprocess_md(content_md: str) -> str:
     # 强力抹除大模型可能私自加上的 H1 大标题，防飞书报错
     content_md = re.sub(r'^#\s*.*?(今日看板|The Pulse).*?\n', '⚡️ 今日看板 (The Pulse)\n', content_md, flags=re.MULTILINE|re.IGNORECASE)
     
-    # 强力清洗：消除可能导致蓝点的无效字符 (- 或 *)
-    content_md = re.sub(r'^[-*]\s*(\*\*?[🔥⚔️📌])', r'\1', content_md, flags=re.MULTILINE)
+    # 🚨 强力清洗：消除可能导致飞书卡片小黑点/列表的无效字符 (- 或 *)
+    content_md = re.sub(r'^[\-\*]\s*(\*?\*?[🔥⚔️📌])', r'\1', content_md, flags=re.MULTILINE)
     
     # 强力清洗：消除不应该出现在标题前的 > 符号
     content_md = re.sub(r'^>\s*(⚡️|💡)', r'\1', content_md, flags=re.MULTILINE)
@@ -457,8 +457,9 @@ def _preprocess_md(content_md: str) -> str:
     content_md = re.sub(r'^(🔁)(.+)$', r'**\1\2**', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'^\s*---\s*$', '\n<HR>\n', content_md, flags=re.MULTILINE)
     
-    # 确保引用块 `>` 之前有空行，这是让 Markdown 解析器正确渲染“竖线引用”的核心关键！
-    content_md = re.sub(r'([^\n])\n>', r'\1\n\n>', content_md)
+    # 🚨 修复飞书排版割裂：强制压缩 Author 与 Quote，以及 Quote 与共识之间的多余空行，合为一个紧凑的文本块
+    content_md = re.sub(r'(🗣️[^\n]+)\n+>', r'\1\n>', content_md)
+    content_md = re.sub(r'(>[^\n]+)\n+(\*?\*?[🔥⚔️📌])', r'\1\n\2', content_md)
     
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
     return content_md.strip()
@@ -613,7 +614,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.5 (全面翻译 + 绝对防断裂单行引用版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.5 (全面翻译 + 绝对防断裂单行引用 + 紧凑UI对位版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
