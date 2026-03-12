@@ -27,7 +27,7 @@ TEST_MODE = True
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
 SF_API_KEY          = os.getenv("SF_API_KEY", "")
 KIMI_API_KEY        = os.getenv("KIMI_API_KEY", "")
-QWEN_API_KEY        = os.getenv("QWEN_API_KEY", "")   # 🚨 新增：千问 API KEY
+QWEN_API_KEY        = os.getenv("QWEN_API_KEY", "")   # 🚨 确保 GitHub Actions 中配置了此变量
 TWTAPI_KEY          = os.getenv("TWTAPI_KEY", "")
 IMGBB_API_KEY       = os.getenv("IMGBB_API_KEY", "") 
 
@@ -235,7 +235,9 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                     time.sleep(2)
                     if consecutive_errors >= 2: break 
                 else: time.sleep(2)
-            except Exception: time.sleep(2)
+            except Exception as e:
+                print(f"  ⚠️ 搜索接口异常: {e}", flush=True)
+                time.sleep(2)
                 
         if success: time.sleep(1.5)
         else: time.sleep(3)
@@ -260,7 +262,9 @@ def fetch_all_tweets_batched(accounts: list) -> list:
                     break
                 elif resp.status_code in [403, 404]: break 
                 else: time.sleep(2)
-            except Exception: time.sleep(2)
+            except Exception as e:
+                print(f"  ⚠️ 全网探测接口异常: {e}", flush=True)
+                time.sleep(2)
         time.sleep(1.5)
         
     return all_tweets
@@ -274,7 +278,8 @@ def fetch_top_comments(tweet_id: str) -> list:
         if resp.status_code == 200:
             raw_comments = parse_rapidapi_tweets(resp.json())
             return [f"@{c['screen_name']}: {c['text'][:150]}" for c in raw_comments if len(c.get("text", "")) > 10][:5]
-    except Exception: pass
+    except Exception as e: 
+        print(f"  ⚠️ 获取神评警告: {e}", flush=True)
     return []
 
 # ==============================================================================
@@ -353,7 +358,10 @@ INSIGHT: （一句话核心洞察，中文，30字以内）
 # LLM 调用引擎：已全面切换至阿里云千问 (Qwen)
 # ==============================================================================
 def llm_call_qwen(combined_jsonl: str, today_str: str):
-    if not QWEN_API_KEY: return "", "", "", ""
+    if not QWEN_API_KEY: 
+        print("⚠️ 未配置 QWEN_API_KEY，跳过请求", flush=True)
+        return "", "", "", ""
+        
     data = combined_jsonl[:200000] if len(combined_jsonl) > 200000 else combined_jsonl
     prompt = _build_llm_prompt(data, today_str)
 
@@ -376,7 +384,10 @@ def llm_call_qwen(combined_jsonl: str, today_str: str):
     return "", "", "", ""
 
 def llm_call_kimi(combined_jsonl: str, today_str: str):
-    if not KIMI_API_KEY: return "", "", "", ""
+    if not KIMI_API_KEY: 
+        print("⚠️ 未配置 KIMI_API_KEY，跳过请求", flush=True)
+        return "", "", "", ""
+        
     data = combined_jsonl[:200000] if len(combined_jsonl) > 200000 else combined_jsonl
     prompt = _build_llm_prompt(data, today_str)
 
@@ -393,19 +404,17 @@ def llm_call_kimi(combined_jsonl: str, today_str: str):
     return "", "", "", ""
 
 def _parse_llm_result(result: str):
-    start, end = result.find("@@@START@@@"), result.find("@@@END@@@")
-    report_text = result[start + 11:end].strip() if (start != -1 and end > start) else result
-
-    search_text = result[result.find("@@@END@@@") + 9:] if "@@@END@@@" in result else result
-    title_m   = re.search(r"TITLE[:：]\s*(.+)", search_text)
-    prompt_m  = re.search(r"PROMPT[:：]\s*([\s\S]+?)(?=INSIGHT[:：]|$)", search_text)
-    insight_m = re.search(r"INSIGHT[:：]\s*([\s\S]+)", search_text)
+    # 使用正则表达式从末尾安全提取元数据
+    title_m   = re.search(r"TITLE[:：]\s*(.+)", result)
+    prompt_m  = re.search(r"PROMPT[:：]\s*([\s\S]+?)(?=INSIGHT[:：]|$)", result)
+    insight_m = re.search(r"INSIGHT[:：]\s*([\s\S]+)", result)
 
     cover_title   = title_m.group(1).strip()   if title_m   else ""
     cover_prompt  = prompt_m.group(1).strip()  if prompt_m  else ""
     cover_insight = insight_m.group(1).strip() if insight_m else ""
 
-    clean_report = re.sub(r"\n?TITLE[:：][\s\S]*$", "", report_text).strip()
+    # 清理正文，去掉末尾的 TITLE/PROMPT/INSIGHT 及其后所有内容
+    clean_report = re.sub(r"\n?TITLE[:：][\s\S]*$", "", result).strip()
     return clean_report, cover_title, cover_prompt, cover_insight
 
 def generate_cover_image(prompt):
@@ -413,7 +422,8 @@ def generate_cover_image(prompt):
     try:
         resp = requests.post(URL_SF_IMAGE, headers={"Authorization": f"Bearer {SF_API_KEY}", "Content-Type": "application/json"}, json={"model": "black-forest-labs/FLUX.1-schnell", "prompt": prompt, "n": 1, "image_size": "1024x576"}, timeout=60)
         if resp.status_code == 200: return resp.json().get("images", [{}])[0].get("url") or resp.json().get("data", [{}])[0].get("url")
-    except Exception: pass
+    except Exception as e: 
+        print(f"  ⚠️ 生成封面警告: {e}", flush=True)
     return ""
 
 def upload_to_imgbb_via_url(sf_url):
@@ -423,7 +433,8 @@ def upload_to_imgbb_via_url(sf_url):
         img_b64 = base64.b64encode(img_resp.content).decode("utf-8")
         upload_resp = requests.post(URL_IMGBB, data={"key": IMGBB_API_KEY, "image": img_b64}, timeout=45)
         if upload_resp.status_code == 200: return upload_resp.json()["data"]["url"]
-    except Exception: pass
+    except Exception as e: 
+        print(f"  ⚠️ 图床上传警告: {e}", flush=True)
     return sf_url
 
 # ==============================================================================
@@ -578,8 +589,10 @@ def build_wechat_html(text, cover_url="", insight=""):
 
 def push_to_jijyun(html_content, title, cover_url=""):
     if not JIJYUN_WEBHOOK_URL: return
-    try: requests.post(JIJYUN_WEBHOOK_URL, json={"title": title, "author": "Prinski", "html_content": html_content, "cover_jpg": cover_url}, timeout=30)
-    except Exception: pass
+    try: 
+        requests.post(JIJYUN_WEBHOOK_URL, json={"title": title, "author": "Prinski", "html_content": html_content, "cover_jpg": cover_url}, timeout=30)
+    except Exception as e: 
+        print(f"  ⚠️ 推送机语警告: {e}", flush=True)
 
 def save_daily_data(today_str: str, post_objects: list, report_text: str):
     data_dir = Path(f"data/{today_str}")
