@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-x_api_auto_task.py  v6.3 (Grok双擎扫描 + 彻底消除@unknown + 原声竖线视觉对位)
+x_api_auto_task.py  v6.4 (千问Qwen替换版 + 原声竖线完美还原 + 加粗共识)
 Architecture: Expert & Global Track -> Deep Parse -> Strict LLM Synthesis -> Clean UI Rendering
 """
 
@@ -27,11 +27,11 @@ TEST_MODE = True
 JIJYUN_WEBHOOK_URL  = os.getenv("JIJYUN_WEBHOOK_URL", "")
 SF_API_KEY          = os.getenv("SF_API_KEY", "")
 KIMI_API_KEY        = os.getenv("KIMI_API_KEY", "")
-OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY", "")
+QWEN_API_KEY        = os.getenv("QWEN_API_KEY", "")   # 🚨 新增：千问 API KEY
 TWTAPI_KEY          = os.getenv("TWTAPI_KEY", "")
 IMGBB_API_KEY       = os.getenv("IMGBB_API_KEY", "") 
 
-OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.7-sonnet")
+QWEN_MODEL          = os.getenv("QWEN_MODEL", "qwen-max") # 默认使用阿里最聪明的千问模型
 try:
     KIMI_TEMPERATURE  = float(os.getenv("KIMI_TEMPERATURE", "0.3"))
 except:
@@ -50,7 +50,7 @@ URL_COMMENTS  = "https://" + RAPIDAPI_HOST + COMMENTS_PATH
 def D(b64_str):
     return base64.b64decode(b64_str).decode("utf-8")
 
-URL_OPENROUTER = D("aHR0cHM6Ly9vcGVucm91dGVyLmFpL2FwaS92MS9jaGF0L2NvbXBsZXRpb25z")
+URL_QWEN       = D("aHR0cHM6Ly9kYXNoc2NvcGUuYWxpeXVuY3MuY29tL2NvbXBhdGlibGUtbW9kZS92MS9jaGF0L2NvbXBsZXRpb25z") # 阿里 DashScope 兼容接口
 URL_MOONSHOT   = D("aHR0cHM6Ly9hcGkubW9vbnNob3QuY24vdjE=")
 URL_SF_IMAGE   = D("aHR0cHM6Ly9hcGkuc2lsaWNvbmZsb3cuY24vdjEvaW1hZ2VzL2dlbmVyYXRpb25z")
 URL_IMGBB      = D("aHR0cHM6Ly9hcGkuaW1nYmIuY29tLzEvdXBsb2Fk")
@@ -278,7 +278,7 @@ def fetch_top_comments(tweet_id: str) -> list:
     return []
 
 # ==============================================================================
-# LLM 提示词 (严格铁律防乱码 + 禁止不当翻译 + 统一原声展现)
+# LLM 提示词 (千问调教版：严格竖线对位、加粗规则、禁用乱码)
 # ==============================================================================
 def _build_llm_prompt(combined_jsonl: str, today_str: str) -> str:
     return f"""
@@ -306,9 +306,13 @@ Pay special attention to posts that include a "comments" array—this represents
 💡 叙事转向：[一句话核心判断。直接写纯文本，禁止在行首使用 > 或 # 符号]
 
 🗣️ @账号名 | Title
-"「推文原文或译文」"
-🔥 核心共识：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号]
-⚔️ 最大分歧：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号]
+> 「推文原文或译文」(❤️ [赞数]赞 | 💬 [评论数]评)
+> 原文发布于 [发布日期] CST
+
+📝 捕手深度解码：
+**🔥 核心共识**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
+**⚔️ 最大分歧**：[直接输出观点文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
+**📌 增量事实**：[直接输出事实文本，绝对禁止在开头添加 - 或 * 符号，必须保持加粗的格式]
 
 ---
 
@@ -326,15 +330,16 @@ Pay special attention to posts that include a "comments" array—this represents
 
 📣 今日精选推文 (Top 5 Picks)
 🗣️ @账号名 | Title
-> 「推文原文或译文」(❤️ [赞数]赞 | 💬 [评论数]评)
-
+> 「推文译文」(❤️ [赞数]赞 | 💬 [评论数]评)
+> 原文发布于 [发布日期] CST
 
 # Strict Constraints (MUST OBEY)
 1. **账号展示格式铁律：** 无论任何时候提及人物，统一严格使用 `🗣️ @账号名 | Title` 格式！(例如：`🗣️ @elonmusk | CEO of Tesla/SpaceX/X`)。绝对不要加入中文真实姓名！
 2. **Title与名字禁止翻译：** Title（头衔/身份）和名字绝对不要翻译为中文，保持纯英文！
-3. **短句禁止翻译：** 如果原始推文少于5个单词，绝对不要翻译！直接在 `> ` 引用块中显示原汁原味的英文！如果大于5个单词则翻译为中文。
-4. **禁止私造标题/乱码：** - 严禁自己编造 `# 硅谷AI日报` 之类的大标题，直接从 `⚡️ 今日看板 (The Pulse)` 开头输出。
-   - 所有带有 Emoji 的标题和正文行首，绝对不要添加 `#`、`>`、`-`、`*` 等乱七八糟的符号！
+3. **短句禁止翻译：** 如果原始推文少于 10 个单词，绝对不要翻译！直接在 `> ` 引用块中显示原汁原味的纯英文原文！如果大于 10 个单词则翻译为中文。
+4. **强行保证原声态竖线：** 每一段原推文的引用以及日期行，必须且只能使用 `> ` 开头！
+5. **禁止私造标题/乱码：** - 严禁自己编造 `# 硅谷AI日报` 之类的大标题，直接从 `⚡️ 今日看板 (The Pulse)` 开头输出。
+   - 在【核心共识】和【最大分歧】前面，只保留双星号加粗，绝对不要添加 `#`、`>`、`-`、`* ` 等列表符号！
 
 # Input Data (JSONL)
 {combined_jsonl}
@@ -349,20 +354,30 @@ PROMPT: （英文封面图生成提示词，100字以内，赛博朋克风，纯
 INSIGHT: （一句话核心洞察，中文，30字以内）
 """
 
-def llm_call_claude(combined_jsonl: str, today_str: str):
-    if not OPENROUTER_API_KEY: return "", "", "", ""
+# ==============================================================================
+# LLM 调用引擎：已全面切换至阿里云千问 (Qwen)
+# ==============================================================================
+def llm_call_qwen(combined_jsonl: str, today_str: str):
+    if not QWEN_API_KEY: return "", "", "", ""
     data = combined_jsonl[:200000] if len(combined_jsonl) > 200000 else combined_jsonl
     prompt = _build_llm_prompt(data, today_str)
 
     for attempt in range(1, 4):
         try:
-            print(f"[LLM/Claude] POST (attempt {attempt}/3)", flush=True)
-            payload = {"model": OPENROUTER_MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0.7, "max_tokens": 8000}
-            resp = requests.post(URL_OPENROUTER, headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=300)
+            print(f"[LLM/Qwen] 正在请求千问 {QWEN_MODEL} (attempt {attempt}/3)...", flush=True)
+            payload = {
+                "model": QWEN_MODEL, 
+                "messages": [{"role": "user", "content": prompt}], 
+                "temperature": 0.7
+            }
+            resp = requests.post(URL_QWEN, headers={"Authorization": f"Bearer {QWEN_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=300)
             resp.raise_for_status()
             result = resp.json()["choices"][0]["message"]["content"].strip()
+            print("  ✅ 千问响应成功！", flush=True)
             return _parse_llm_result(result)
-        except Exception: time.sleep(2)
+        except Exception as e: 
+            print(f"  ❌ 千问网络/解析异常: {e}", flush=True)
+            time.sleep(2)
     return "", "", "", ""
 
 def llm_call_kimi(combined_jsonl: str, today_str: str):
@@ -372,12 +387,14 @@ def llm_call_kimi(combined_jsonl: str, today_str: str):
 
     for attempt in range(1, 4):
         try:
-            print(f"[LLM/Kimi] Calling kimi-k2.5 (attempt {attempt}/3)", flush=True)
+            print(f"[LLM/Kimi] 备用通道请求 kimi-k2.5 (attempt {attempt}/3)...", flush=True)
             client = OpenAI(api_key=KIMI_API_KEY, base_url=URL_MOONSHOT)
             resp = client.chat.completions.create(model="kimi-k2.5", messages=[{"role": "user", "content": prompt}], temperature=KIMI_TEMPERATURE)
             result = resp.choices[0].message.content.strip()
             return _parse_llm_result(result)
-        except Exception: time.sleep(2)
+        except Exception as e: 
+            print(f"  ❌ Kimi 网络异常: {e}", flush=True)
+            time.sleep(2)
     return "", "", "", ""
 
 def _parse_llm_result(result: str):
@@ -415,14 +432,14 @@ def upload_to_imgbb_via_url(sf_url):
     return sf_url
 
 # ==============================================================================
-# 视觉对位引擎 (完美清除蓝点，直接发送干净原生 Markdown)
+# 视觉对位引擎 (完美还原原生竖线、精准高亮共识分歧)
 # ==============================================================================
 def _preprocess_md(content_md: str) -> str:
     # 强力抹除大模型可能私自加上的 H1 大标题，防飞书报错
     content_md = re.sub(r'^#\s*.*?(今日看板|The Pulse).*?\n', '⚡️ 今日看板 (The Pulse)\n', content_md, flags=re.MULTILINE|re.IGNORECASE)
     
     # 强力清洗：消除可能导致蓝点的无效字符 (- 或 *)
-    content_md = re.sub(r'^[-*]\s*([🔥⚔️📌])', r'\1', content_md, flags=re.MULTILINE)
+    content_md = re.sub(r'^[-*]\s*(\*\*?[🔥⚔️📌])', r'\1', content_md, flags=re.MULTILINE)
     
     # 强力清洗：消除不应该出现在标题前的 > 符号
     content_md = re.sub(r'^>\s*(⚡️|💡)', r'\1', content_md, flags=re.MULTILINE)
@@ -432,7 +449,7 @@ def _preprocess_md(content_md: str) -> str:
     content_md = re.sub(r'^(🔁)(.+)$', r'**\1\2**', content_md, flags=re.MULTILINE)
     content_md = re.sub(r'^\s*---\s*$', '\n<HR>\n', content_md, flags=re.MULTILINE)
     
-    # 确保引用块 `>` 之前有空行，保证 Markdown 解析引擎能正确渲染灰色竖线！
+    # 确保引用块 `>` 之前有空行，这是让 Markdown 解析器正确渲染“竖线引用”的核心关键！
     content_md = re.sub(r'([^\n])\n>', r'\1\n\n>', content_md)
     
     content_md = re.sub(r'\n{3,}', '\n\n', content_md)
@@ -458,11 +475,11 @@ def _split_to_elements(content_md: str) -> list:
                 elements.append({"tag": "markdown", "content": chunk.strip()}); chunk = para
             else: chunk = chunk + "\n\n" + para if chunk else para
             
-    # 让飞书原生的 markdown 解析器去处理 "> "，渲染出最纯正美观的灰色竖线框
+    # 因为我们在 preprocess 留出了空行，飞书原生的 tag: markdown 会完美把 > 渲染为左侧灰色的原生引用条。
     if chunk.strip(): elements.append({"tag": "markdown", "content": chunk.strip()})
     return elements
 
-def send_to_feishu_card(content_md: str, today_str: str, model_label: str = "Claude"):
+def send_to_feishu_card(content_md: str, today_str: str, model_label: str = "Qwen"):
     webhooks = get_feishu_webhooks()
     if not webhooks: return
     card_payload = {
@@ -488,11 +505,11 @@ def _md_to_html(text):
     html_lines = []
     in_quote = False
 
-    for line in lines:
+    for i, line in enumerate(lines):
         line = line.strip()
         if not line: continue
 
-        # 🚨 引用体：渲染为左侧深色竖线 + 灰底块，极致复刻原生卡片效果
+        # 🚨 完美引用体渲染：左侧灰色竖线 + 灰白底块 (视觉100%对位)
         if line.startswith('>'):
             content = line[1:].strip()
             content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', content)
@@ -500,22 +517,32 @@ def _md_to_html(text):
                 html_lines.append('<blockquote style="margin: 12px 0; padding: 10px 16px; color: #555; background-color: #f8f9fa; border-left: 4px solid #8c98a4; border-radius: 4px; font-size: 15px; line-height: 1.6;">')
                 in_quote = True
             html_lines.append(f'<p style="margin: 4px 0;">{content}</p>')
-            continue
-        else:
-            if in_quote:
+            
+            # 判断下一行是否还是引用
+            next_is_quote = False
+            if i + 1 < len(lines) and lines[i+1].strip().startswith('>'):
+                next_is_quote = True
+                
+            if not next_is_quote:
                 html_lines.append('</blockquote>')
                 in_quote = False
+            continue
 
-        # 🚨 终极清洗：剔除可能带有的 - 或 * 列表符，防止产生烦人的蓝点
-        if re.match(r'^[-*]\s*[🔥⚔️📌]', line):
+        # 🚨 加粗共识与分歧展示：带有特殊底色，强化视觉重点，彻底清除前面的列表乱码符
+        if re.match(r'^[-*]\s*', line):
             line = re.sub(r'^[-*]\s*', '', line) 
             
-        if line.startswith('🔥') or line.startswith('⚔️') or line.startswith('📌'):
+        if line.startswith('**🔥') or line.startswith('**⚔️') or line.startswith('**📌') or line.startswith('🔥') or line.startswith('⚔️') or line.startswith('📌'):
+            # 兼容大模型有没有打出 ** 符号的情况
             converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#d35400;">\1</strong>', line)
+            if '**' not in line: 
+                parts = line.split("：", 1)
+                if len(parts) == 2:
+                    converted = f'<strong style="color:#d35400;">{parts[0]}</strong>：{parts[1]}'
             html_lines.append(f'<p style="margin:6px 0; font-size:15px; line-height:1.6; background:#fff5f5; padding: 6px 10px; border-radius: 4px;">{converted}</p>')
             continue
 
-        # 🗣️ 账号行对位
+        # 🗣️ 账号行强对位
         if line.startswith('🗣️'):
             converted = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color:#2980b9;">\1</strong>', line)
             html_lines.append(f'<p style="margin:16px 0 4px 0; font-size:14px; font-weight:bold; color:#2c3e50;">{converted}</p>')
@@ -559,7 +586,6 @@ def push_to_jijyun(html_content, title, cover_url=""):
     try: requests.post(JIJYUN_WEBHOOK_URL, json={"title": title, "author": "Prinski", "html_content": html_content, "cover_jpg": cover_url}, timeout=30)
     except Exception: pass
 
-# 🚨 修复参数类型导致语法错误的 Bug
 def save_daily_data(today_str: str, post_objects: list, report_text: str):
     data_dir = Path(f"data/{today_str}")
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -573,7 +599,7 @@ def save_daily_data(today_str: str, post_objects: list, report_text: str):
 def main():
     print("=" * 60, flush=True)
     mode_str = "测试模式(10人)" if TEST_MODE else "全量模式(100人)"
-    print(f"昨晚硅谷在聊啥 v6.3 (双擎防漏 + 纯正竖线对位版 - {mode_str})", flush=True)
+    print(f"昨晚硅谷在聊啥 v6.4 (千问Qwen首发 + 竖线视觉对位版 - {mode_str})", flush=True)
     print("=" * 60, flush=True)
 
     today_str, _ = get_dates()
@@ -627,10 +653,11 @@ def main():
     model_label = ""
 
     if combined_jsonl.strip():
-        print("\n[LLM] Calling Claude...", flush=True)
-        report_text, cover_title, cover_prompt, cover_insight = llm_call_claude(combined_jsonl, today_str)
-        if report_text: model_label = "Claude"
+        # 🚨 调用千问大模型
+        report_text, cover_title, cover_prompt, cover_insight = llm_call_qwen(combined_jsonl, today_str)
+        if report_text: model_label = "Qwen"
         else:
+            # 千问失败时备用降级到 Kimi
             report_text, cover_title, cover_prompt, cover_insight = llm_call_kimi(combined_jsonl, today_str)
             if report_text: model_label = "Kimi-k2.5"
     
@@ -647,7 +674,7 @@ def main():
             push_to_jijyun(html_content, title=wechat_title, cover_url=cover_url)
 
     save_daily_data(today_str, final_feed, report_text)
-    print("\n🎉 V6.3 运行完毕！", flush=True)
+    print("\n🎉 V6.4 运行完毕！", flush=True)
 
 if __name__ == "__main__":
     main()
