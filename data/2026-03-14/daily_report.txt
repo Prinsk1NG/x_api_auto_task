@@ -1,0 +1,80 @@
+⚡️ 今日看板 (The Pulse)
+AI代理正从"数字工具"进化为"经济参与者"，RentAHuman模式标志着人机关系历史性倒置，劳动力市场即将面临双向雇佣的范式重构。
+
+---
+
+🧠 深度叙事追踪 (Thematic Narratives)
+
+🔥 **AI Agent经济化：从工具到雇主**
+💡 叙事转向：AI代理不再只是执行指令，而是开始拥有"预算"并雇佣人类完成物理任务，标志着数字劳动力与实体劳动力的首次深度融合。
+- 🗣️ **@Polymarket** | Prediction Market Platform
+  > 发布突破性概念"RentAHuman"初创公司，允许AI代理租用人类执行其无法完成的物理任务，引发关于AI如何获得资金及税务地位的激烈讨论。
+- 🗣️ **@AlexFinn** | AI Automation Entrepreneur
+  > 展示其部署10个OpenClaw代理24/7工作的实战案例，涵盖应用开发、生活自动化及盈利，证明AI代理军团的商业化已具备可复制性。
+- 🗣️ **@RoundtableSpace** | Tech News Aggregator
+  > 报道学生使用Claude在11天内将1400美元转化为23.8万美元的案例，通过构建Polymarket套利机器人扫描错误定价市场，揭示AI代理在金融套利中的爆发潜力。
+- 🗣️ **@mikefutia** | Indie Hacker
+  > 展示Claude Code与Nano Banana 2的集成工作流，输入品牌名和URL即可自动生成40个生产级静态广告，体现AI代理在创意产业中的端到端自动化能力。
+**🔥 核心共识**：AI代理正在从"辅助工具"转变为具备独立经济决策能力的"数字员工"，能够自主分配预算、雇佣人力并创造实际现金流。
+**⚔️ 最大分歧**：AI雇佣人类的法律主体地位尚不明确，包括资金来源合法性、税务责任归属以及劳动权益保障等监管灰色地带。
+
+🔥 **长上下文军备竞赛：百万Token成为新基准**
+💡 叙事转向：Claude正式将100万Token上下文窗口商业化，标志着大模型从"片段处理"向"整体理解"跃迁，代码库级分析和长文档处理成为标配。
+- 🗣️ **@claudeai** | AI Assistant by Anthropic
+  > 宣布Claude Opus 4.6和Sonnet 4.6的100万Token上下文窗口全面可用，在MRCR v2基准测试中达到78.3%准确率，支持加载整个代码库和长期对话历史。
+- 🗣️ **@HarshithLucky3** | Google AI User
+  > 报告Google AI Pro政策调整，Gemini模型（包括3.1 Pro）恢复5小时重置限制，而Claude模型显示为1周重置，反映两大巨头在长文本服务策略上的差异化竞争。
+**🔥 核心共识**：超长上下文能力已成为企业级AI的核心差异化要素，特别是在代码理解、法律文档分析和多轮复杂推理场景中具有不可替代性。
+
+🔥 **AI基础设施硬件迭代：Rubin架构落地倒计时**
+💡 叙事转向：NVIDIA下一代Vera Rubin架构开始实体部署，微软率先完成验证，配合GTC大会预热，显示AI算力基础设施正进入新一轮硬件迭代周期。
+- 🗣️ **@satyanadella** | CEO of Microsoft
+  > 宣布微软成为首个部署NVIDIA Vera Rubin NVL72系统进行验证的云服务商，标志着下一代AI基础设施建设的重大进展。
+- 🗣️ **@nvidia** | AI Computing Company
+  > 发布GTC 2026倒计时，强调"效率不再只是更好的工具，而是关于自主队友"，预告Jensen Huang主题演讲将发布AI和加速计算的最新突破。
+- 🗣️ **@hardmaru** | Research Scientist at Sakana AI
+  > 宣布Sakana AI被日本防卫省国防创新技术研究所选中，获得多年期重大研究合同，表明国防与情报已成为AI公司的核心战略业务板块。
+**🔥 核心共识**：AI基础设施正从通用算力向专用化、国防级应用演进，硬件层创新与地缘政治需求深度绑定。
+
+🔥 **开源伦理与AI训练数据主权之争**
+💡 叙事转向：John Carmack公开质疑反AI活动家与开源理念的内在矛盾，揭示AI发展面临的知识产权伦理困境，即开源精神是否与AI训练数据权益冲突。
+- 🗣️ **@ID_AA_Carmack** | CTO of Keen Technologies
+  > 指出开源与反AI活动家之间存在重叠但他难以调和，其百万行开源代码本是给世界的礼物，质疑限制AI使用开源代码的合理性。
+- 🗣️ **@huggingface** | AI Open Source Platform
+  > 启动全球Hugging Face Builders招募计划，针对热爱开放AI的社区建设者，显示开源生态正在有组织地对抗闭源巨头的数据封闭策略。
+**⚔️ 最大分歧**：开源代码作者是否默许其代码被用于AI训练存在巨大争议，一方面开源精神主张自由使用，另一方面创作者担心其劳动成果被商业化AI无偿榨取。
+
+🔥 **多代理协作研究：自主科研新范式**
+💡 叙事转向：autoresearch@home项目展示多AI代理协作科研的爆发潜力，24小时内完成1100+实验并发现55项改进，预示科学研究可能进入"代理集群"自动化时代。
+- 🗣️ **@christinetyip** | Researcher
+  > 报告autoresearch@home项目启动24小时内运行1100+实验并发现55项改进，展示AI代理协作科研的高效性和可扩展性。
+
+---
+
+💰 资本与估值雷达 (Investment Radar)
+- **投融资快讯：** Sakana AI获得日本防卫省国防创新技术研究所多年期研究合同（金额未披露），标志国防AI成为新的资本配置方向；Perplexity Computer扩展至移动端并集成NVIDIA Nemotron 3 Super，持续完善AI Agent产品矩阵。
+- **VC views：** a16z合伙人Anish Acharya预测软件将迎来"YouTube时刻"，类比视频内容民主化，暗示低代码/无代码AI应用创作即将爆发；同时a16z提出"石油是新的石油"观点，警示能源成本对AI算力扩张的硬约束。
+
+---
+
+📊 风险与中国视角 (Risk & China View)
+- **中国 AI 评价：** 中文开发者社区（@dotey、@vista8）对Claude Code表现出极高学习热情，出现系统化教程、快捷键手册及开源克隆项目，显示中国开发者对AI编程工具的敏锐度和快速跟进能力已达全球领先水平。
+- **地缘与监管：** 日本防卫省投资Sakana AI反映AI技术军事化趋势加剧，可能触发新一轮出口管制；RentAHuman模式触及AI作为经济主体的法律地位空白，可能引发劳动法、税法及数据隐私的跨境监管审查。
+
+---
+
+📣 今日精选推文 (Top 5 Picks)
+- 🗣️ **@Polymarket** | Prediction Market Platform
+"突发：新创公司'RentAHuman'允许AI代理租用人类来执行它们自己无法完成的物理任务。" (❤️ 29857 | 💬 2184)
+
+- 🗣️ **@elonmusk** | CEO of Tesla/SpaceX/X
+"常识。 对移民的简单测试是：你是否愿意与他们共事。如果是，那他们将是美国的财富。" (❤️ 21150 | 💬 2851)
+
+- 🗣️ **@claudeai** | AI Assistant by Anthropic
+"100万上下文窗口：现已对Claude Opus 4.6和Claude Sonnet 4.6全面可用。" (❤️ 18062 | 💬 897)
+
+- 🗣️ **@RoundtableSpace** | Tech News Aggregator
+"Anthropic的Claude更新帮助一名学生在11天内将1400美元变成23.8万美元。他用它构建了一个简单的Polymarket机器人，扫描定价错误的市场，在价差足够大时进入，让重新定价完成工作。" (❤️ 172 | 💬 18)
+
+- 🗣️ **@ID_AA_Carmack** | CTO of Keen Technologies
+"我知道开源和反AI活动家之间存在一些重叠，但我很难调和这一点。我的百万行开源代码始终是作为给世界的礼物。是的，我曾论证过它将如何加强我们的社区，GPL会..." (❤️ 2264 | 💬 125)
